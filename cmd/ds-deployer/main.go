@@ -19,7 +19,9 @@ import (
 	deploymentController "github.com/dotmesh-io/ds-deployer/internal/controller"
 )
 
-var log = logf.Log.WithName("example-controller")
+const controllerName = "deployment-controller"
+
+var log = logf.Log.WithName(controllerName)
 
 func main() {
 	logf.SetLogger(zap.Logger(false))
@@ -44,9 +46,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Setup a new controller to reconcile ReplicaSets
+	// Setup a new controller to reconcile dotscience deployments
 	entryLog.Info("Setting up controller")
-	c, err := controller.New("foo-controller", mgr, controller.Options{
+	c, err := controller.New(controllerName, mgr, controller.Options{
 		Reconciler: deploymentReconciler,
 	})
 	if err != nil {
