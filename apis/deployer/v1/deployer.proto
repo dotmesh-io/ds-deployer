@@ -1,0 +1,37 @@
+syntax = "proto3";
+package deployer_v1;
+
+service Deployer {   
+  rpc StreamDeployments(DeploymentFilter) returns (stream Deployment) {}
+  rpc ListDeployments(DeploymentFilter) returns (GetDeploymentsResponse) {}
+ 
+  rpc UpdateDeployment(UpdateDeploymentRequest) returns (UpdateDeploymentResponse) {}
+}
+
+message DeploymentFilter {
+  string cluster      = 1;
+  string deployerName = 2;
+}
+
+message Deployment {
+  string id                  = 1;
+  string namespace           = 2;
+  string name                = 3;
+  string imageName           = 4;             
+  string ingressHost         = 5;
+  map<string, string> labels = 6;
+}
+
+message GetDeploymentsResponse {
+  repeated Deployment deployments = 1;
+}
+
+message UpdateDeploymentRequest {
+  string id     = 1;
+  string name   = 2;
+  string status = 3;
+}
+
+message UpdateDeploymentResponse {
+
+}
