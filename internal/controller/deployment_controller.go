@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
 
@@ -11,17 +12,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// reconcileDeployment reconciles Deployments
-type reconcileDeployment struct {
+// Reconciler reconciles Deployments
+type Reconciler struct {
 	// client can be used to retrieve objects from the APIServer.
 	client client.Client
 	log    logr.Logger
 }
 
-// Implement reconcile.Reconciler so the controller can reconcile objects
-var _ reconcile.Reconciler = &reconcileDeployment{}
+func New(opts ...Option) (*Reconciler, error) {
+	r := new(Reconciler)
+	for _, opt := range opts {
+		opt(r)
+	}
 
-func (r *reconcileDeployment) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+	if r.client == nil {
+		return nil, fmt.Errorf("Kubernetes client is missing")
+	}
+	if r.log == nil {
+		return nil, fmt.Errorf("logger is missing")
+	}
+
+	return r, nil
+}
+
+// Implement reconcile.Reconciler so the controller can reconcile objects
+var _ reconcile.Reconciler = &Reconciler{}
+
+func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	// set up a convenient log object so we don't have to type request over and over again
 	log := r.log.WithValues("request", request)
 
