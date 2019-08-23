@@ -14,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	deploymentController "github.com/dotmesh-io/ds-deployer/internal/controller"
 )
 
 var log = logf.Log.WithName("example-controller")
@@ -30,10 +32,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	controllerOptions := []deploymentController.Option{
+		deploymentController.WithClient(mgr.GetClient()),
+		deploymentController.WithLogger(log.WithName("deployment-reconciler")),
+	}
+
+	deploymentReconciler, err := deploymentController.New(controllerOptions...)
+	if err != nil {
+		entryLog.Error(err, "unable to set up dotscience deployment controller")
+		os.Exit(1)
+	}
+
 	// Setup a new controller to reconcile ReplicaSets
 	entryLog.Info("Setting up controller")
 	c, err := controller.New("foo-controller", mgr, controller.Options{
-		Reconciler: &reconcileReplicaSet{client: mgr.GetClient(), log: log.WithName("reconciler")},
+		Reconciler: deploymentReconciler,
 	})
 	if err != nil {
 		entryLog.Error(err, "unable to set up individual controller")
@@ -41,7 +54,7 @@ func main() {
 	}
 
 	// Watch ReplicaSets and enqueue ReplicaSet object key
-	if err := c.Watch(&source.Kind{Type: &appsv1.ReplicaSet{}}, &handler.EnqueueRequestForObject{}); err != nil {
+	if err := c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}); err != nil {
 		entryLog.Error(err, "unable to watch ReplicaSets")
 		os.Exit(1)
 	}
