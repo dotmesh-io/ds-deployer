@@ -5,6 +5,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/api/extensions/v1beta1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -53,18 +54,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Watch ReplicaSets and enqueue ReplicaSet object key
+	// Watch Deployment and enqueue ReplicaSet object key
 	if err := c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}); err != nil {
-		entryLog.Error(err, "unable to watch ReplicaSets")
+		entryLog.Error(err, "unable to watch Deployment")
 		os.Exit(1)
 	}
 
-	// Watch Pods and enqueue owning ReplicaSet key
-	if err := c.Watch(&source.Kind{Type: &corev1.Pod{}},
-		&handler.EnqueueRequestForOwner{OwnerType: &appsv1.ReplicaSet{}, IsController: true}); err != nil {
-		entryLog.Error(err, "unable to watch Pods")
+	if err := c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForObject{}); err != nil {
+		entryLog.Error(err, "unable to watch Ingress")
 		os.Exit(1)
 	}
+
+	if err := c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForObject{}); err != nil {
+		entryLog.Error(err, "unable to watch Service")
+		os.Exit(1)
+	}
+
+	// // Watch Pods and enqueue owning ReplicaSet key
+	// if err := c.Watch(&source.Kind{Type: &corev1.Pod{}},
+	// 	&handler.EnqueueRequestForOwner{OwnerType: &appsv1.ReplicaSet{}, IsController: true}); err != nil {
+	// 	entryLog.Error(err, "unable to watch Pods")
+	// 	os.Exit(1)
+	// }
 
 	// Setup webhooks
 	entryLog.Info("setting up webhook server")
