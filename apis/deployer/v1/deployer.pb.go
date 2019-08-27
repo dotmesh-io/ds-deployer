@@ -7,6 +7,9 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
+import context "golang.org/x/net/context"
+import grpc "google.golang.org/grpc"
+
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -32,7 +35,7 @@ func (m *DeploymentFilter) Reset()         { *m = DeploymentFilter{} }
 func (m *DeploymentFilter) String() string { return proto.CompactTextString(m) }
 func (*DeploymentFilter) ProtoMessage()    {}
 func (*DeploymentFilter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_50b68556edb7e7e5, []int{0}
+	return fileDescriptor_deployer_3a9c780961773330, []int{0}
 }
 func (m *DeploymentFilter) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -80,7 +83,7 @@ type Deployment struct {
 	Namespace            string            `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	Name                 string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	ImageName            string            `protobuf:"bytes,4,opt,name=imageName,proto3" json:"imageName,omitempty"`
-	IngressHost          string            `protobuf:"bytes,5,opt,name=ingressHost,proto3" json:"ingressHost,omitempty"`
+	Ingress              *Ingress          `protobuf:"bytes,5,opt,name=ingress" json:"ingress,omitempty"`
 	Labels               map[string]string `protobuf:"bytes,6,rep,name=labels" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -91,7 +94,7 @@ func (m *Deployment) Reset()         { *m = Deployment{} }
 func (m *Deployment) String() string { return proto.CompactTextString(m) }
 func (*Deployment) ProtoMessage()    {}
 func (*Deployment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_50b68556edb7e7e5, []int{1}
+	return fileDescriptor_deployer_3a9c780961773330, []int{1}
 }
 func (m *Deployment) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -148,11 +151,11 @@ func (m *Deployment) GetImageName() string {
 	return ""
 }
 
-func (m *Deployment) GetIngressHost() string {
+func (m *Deployment) GetIngress() *Ingress {
 	if m != nil {
-		return m.IngressHost
+		return m.Ingress
 	}
-	return ""
+	return nil
 }
 
 func (m *Deployment) GetLabels() map[string]string {
@@ -160,6 +163,61 @@ func (m *Deployment) GetLabels() map[string]string {
 		return m.Labels
 	}
 	return nil
+}
+
+type Ingress struct {
+	Class                string   `protobuf:"bytes,1,opt,name=class,proto3" json:"class,omitempty"`
+	Host                 string   `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *Ingress) Reset()         { *m = Ingress{} }
+func (m *Ingress) String() string { return proto.CompactTextString(m) }
+func (*Ingress) ProtoMessage()    {}
+func (*Ingress) Descriptor() ([]byte, []int) {
+	return fileDescriptor_deployer_3a9c780961773330, []int{2}
+}
+func (m *Ingress) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Ingress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Ingress.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Ingress) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Ingress.Merge(dst, src)
+}
+func (m *Ingress) XXX_Size() int {
+	return m.Size()
+}
+func (m *Ingress) XXX_DiscardUnknown() {
+	xxx_messageInfo_Ingress.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Ingress proto.InternalMessageInfo
+
+func (m *Ingress) GetClass() string {
+	if m != nil {
+		return m.Class
+	}
+	return ""
+}
+
+func (m *Ingress) GetHost() string {
+	if m != nil {
+		return m.Host
+	}
+	return ""
 }
 
 type GetDeploymentsResponse struct {
@@ -173,7 +231,7 @@ func (m *GetDeploymentsResponse) Reset()         { *m = GetDeploymentsResponse{}
 func (m *GetDeploymentsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetDeploymentsResponse) ProtoMessage()    {}
 func (*GetDeploymentsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_50b68556edb7e7e5, []int{2}
+	return fileDescriptor_deployer_3a9c780961773330, []int{3}
 }
 func (m *GetDeploymentsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -222,7 +280,7 @@ func (m *UpdateDeploymentRequest) Reset()         { *m = UpdateDeploymentRequest
 func (m *UpdateDeploymentRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateDeploymentRequest) ProtoMessage()    {}
 func (*UpdateDeploymentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_50b68556edb7e7e5, []int{3}
+	return fileDescriptor_deployer_3a9c780961773330, []int{4}
 }
 func (m *UpdateDeploymentRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -282,7 +340,7 @@ func (m *UpdateDeploymentResponse) Reset()         { *m = UpdateDeploymentRespon
 func (m *UpdateDeploymentResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateDeploymentResponse) ProtoMessage()    {}
 func (*UpdateDeploymentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_50b68556edb7e7e5, []int{4}
+	return fileDescriptor_deployer_3a9c780961773330, []int{5}
 }
 func (m *UpdateDeploymentResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -315,10 +373,178 @@ func init() {
 	proto.RegisterType((*DeploymentFilter)(nil), "deployer_v1.DeploymentFilter")
 	proto.RegisterType((*Deployment)(nil), "deployer_v1.Deployment")
 	proto.RegisterMapType((map[string]string)(nil), "deployer_v1.Deployment.LabelsEntry")
+	proto.RegisterType((*Ingress)(nil), "deployer_v1.Ingress")
 	proto.RegisterType((*GetDeploymentsResponse)(nil), "deployer_v1.GetDeploymentsResponse")
 	proto.RegisterType((*UpdateDeploymentRequest)(nil), "deployer_v1.UpdateDeploymentRequest")
 	proto.RegisterType((*UpdateDeploymentResponse)(nil), "deployer_v1.UpdateDeploymentResponse")
 }
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// Client API for Deployer service
+
+type DeployerClient interface {
+	StreamDeployments(ctx context.Context, in *DeploymentFilter, opts ...grpc.CallOption) (Deployer_StreamDeploymentsClient, error)
+	ListDeployments(ctx context.Context, in *DeploymentFilter, opts ...grpc.CallOption) (*GetDeploymentsResponse, error)
+	UpdateDeployment(ctx context.Context, in *UpdateDeploymentRequest, opts ...grpc.CallOption) (*UpdateDeploymentResponse, error)
+}
+
+type deployerClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewDeployerClient(cc *grpc.ClientConn) DeployerClient {
+	return &deployerClient{cc}
+}
+
+func (c *deployerClient) StreamDeployments(ctx context.Context, in *DeploymentFilter, opts ...grpc.CallOption) (Deployer_StreamDeploymentsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_Deployer_serviceDesc.Streams[0], "/deployer_v1.Deployer/StreamDeployments", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &deployerStreamDeploymentsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type Deployer_StreamDeploymentsClient interface {
+	Recv() (*Deployment, error)
+	grpc.ClientStream
+}
+
+type deployerStreamDeploymentsClient struct {
+	grpc.ClientStream
+}
+
+func (x *deployerStreamDeploymentsClient) Recv() (*Deployment, error) {
+	m := new(Deployment)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *deployerClient) ListDeployments(ctx context.Context, in *DeploymentFilter, opts ...grpc.CallOption) (*GetDeploymentsResponse, error) {
+	out := new(GetDeploymentsResponse)
+	err := c.cc.Invoke(ctx, "/deployer_v1.Deployer/ListDeployments", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *deployerClient) UpdateDeployment(ctx context.Context, in *UpdateDeploymentRequest, opts ...grpc.CallOption) (*UpdateDeploymentResponse, error) {
+	out := new(UpdateDeploymentResponse)
+	err := c.cc.Invoke(ctx, "/deployer_v1.Deployer/UpdateDeployment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for Deployer service
+
+type DeployerServer interface {
+	StreamDeployments(*DeploymentFilter, Deployer_StreamDeploymentsServer) error
+	ListDeployments(context.Context, *DeploymentFilter) (*GetDeploymentsResponse, error)
+	UpdateDeployment(context.Context, *UpdateDeploymentRequest) (*UpdateDeploymentResponse, error)
+}
+
+func RegisterDeployerServer(s *grpc.Server, srv DeployerServer) {
+	s.RegisterService(&_Deployer_serviceDesc, srv)
+}
+
+func _Deployer_StreamDeployments_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(DeploymentFilter)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(DeployerServer).StreamDeployments(m, &deployerStreamDeploymentsServer{stream})
+}
+
+type Deployer_StreamDeploymentsServer interface {
+	Send(*Deployment) error
+	grpc.ServerStream
+}
+
+type deployerStreamDeploymentsServer struct {
+	grpc.ServerStream
+}
+
+func (x *deployerStreamDeploymentsServer) Send(m *Deployment) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _Deployer_ListDeployments_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeploymentFilter)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeployerServer).ListDeployments(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deployer_v1.Deployer/ListDeployments",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeployerServer).ListDeployments(ctx, req.(*DeploymentFilter))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Deployer_UpdateDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DeployerServer).UpdateDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/deployer_v1.Deployer/UpdateDeployment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DeployerServer).UpdateDeployment(ctx, req.(*UpdateDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _Deployer_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "deployer_v1.Deployer",
+	HandlerType: (*DeployerServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListDeployments",
+			Handler:    _Deployer_ListDeployments_Handler,
+		},
+		{
+			MethodName: "UpdateDeployment",
+			Handler:    _Deployer_UpdateDeployment_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamDeployments",
+			Handler:       _Deployer_StreamDeployments_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "deployer.proto",
+}
+
 func (m *DeploymentFilter) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -391,11 +617,15 @@ func (m *Deployment) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintDeployer(dAtA, i, uint64(len(m.ImageName)))
 		i += copy(dAtA[i:], m.ImageName)
 	}
-	if len(m.IngressHost) > 0 {
+	if m.Ingress != nil {
 		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintDeployer(dAtA, i, uint64(len(m.IngressHost)))
-		i += copy(dAtA[i:], m.IngressHost)
+		i = encodeVarintDeployer(dAtA, i, uint64(m.Ingress.Size()))
+		n1, err := m.Ingress.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
 	}
 	if len(m.Labels) > 0 {
 		for k, _ := range m.Labels {
@@ -413,6 +643,39 @@ func (m *Deployment) MarshalTo(dAtA []byte) (int, error) {
 			i = encodeVarintDeployer(dAtA, i, uint64(len(v)))
 			i += copy(dAtA[i:], v)
 		}
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *Ingress) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Ingress) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Class) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintDeployer(dAtA, i, uint64(len(m.Class)))
+		i += copy(dAtA[i:], m.Class)
+	}
+	if len(m.Host) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintDeployer(dAtA, i, uint64(len(m.Host)))
+		i += copy(dAtA[i:], m.Host)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -558,8 +821,8 @@ func (m *Deployment) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovDeployer(uint64(l))
 	}
-	l = len(m.IngressHost)
-	if l > 0 {
+	if m.Ingress != nil {
+		l = m.Ingress.Size()
 		n += 1 + l + sovDeployer(uint64(l))
 	}
 	if len(m.Labels) > 0 {
@@ -569,6 +832,23 @@ func (m *Deployment) Size() (n int) {
 			mapEntrySize := 1 + len(k) + sovDeployer(uint64(len(k))) + 1 + len(v) + sovDeployer(uint64(len(v)))
 			n += mapEntrySize + 1 + sovDeployer(uint64(mapEntrySize))
 		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *Ingress) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Class)
+	if l > 0 {
+		n += 1 + l + sovDeployer(uint64(l))
+	}
+	l = len(m.Host)
+	if l > 0 {
+		n += 1 + l + sovDeployer(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -890,9 +1170,9 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 5:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field IngressHost", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Ingress", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDeployer
@@ -902,20 +1182,24 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthDeployer
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.IngressHost = string(dAtA[iNdEx:postIndex])
+			if m.Ingress == nil {
+				m.Ingress = &Ingress{}
+			}
+			if err := m.Ingress.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 6:
 			if wireType != 2 {
@@ -1034,6 +1318,115 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Labels[mapkey] = mapvalue
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDeployer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDeployer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Ingress) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDeployer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Ingress: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Ingress: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Class", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDeployer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDeployer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Class = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Host", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDeployer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDeployer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Host = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1433,34 +1826,36 @@ var (
 	ErrIntOverflowDeployer   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("deployer.proto", fileDescriptor_deployer_50b68556edb7e7e5) }
+func init() { proto.RegisterFile("deployer.proto", fileDescriptor_deployer_3a9c780961773330) }
 
-var fileDescriptor_deployer_50b68556edb7e7e5 = []byte{
-	// 414 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0x4b, 0x8e, 0xd3, 0x40,
-	0x10, 0x4d, 0x3b, 0x33, 0x86, 0x29, 0xa3, 0xc1, 0x94, 0xd0, 0x4c, 0xcb, 0x02, 0x2b, 0x6a, 0x40,
-	0x9a, 0x95, 0x05, 0xc3, 0x86, 0x81, 0x1d, 0x1a, 0x3e, 0x8b, 0x11, 0x20, 0x47, 0x11, 0x4b, 0xd4,
-	0x89, 0x4b, 0x91, 0x85, 0x7f, 0xb8, 0xdb, 0x91, 0x72, 0x01, 0xae, 0x00, 0x47, 0x62, 0xc9, 0x11,
-	0x50, 0xb8, 0x08, 0x4a, 0xdb, 0xc6, 0x0e, 0xc1, 0x42, 0xec, 0xfa, 0xbd, 0xaa, 0x57, 0xfd, 0xea,
-	0xb5, 0x0d, 0xc7, 0x11, 0x15, 0x49, 0xbe, 0xa6, 0x32, 0x28, 0xca, 0x5c, 0xe7, 0xe8, 0xb4, 0xf8,
-	0xc3, 0xea, 0x91, 0x78, 0x07, 0xee, 0xa5, 0x81, 0x29, 0x65, 0xfa, 0x65, 0x9c, 0x68, 0x2a, 0x91,
-	0xc3, 0xb5, 0x45, 0x52, 0x29, 0x4d, 0x25, 0x67, 0x13, 0x76, 0x76, 0x14, 0xb6, 0x10, 0x05, 0xdc,
-	0x68, 0xc5, 0x6f, 0x64, 0x4a, 0xdc, 0x32, 0xe5, 0x1d, 0x4e, 0x7c, 0xb6, 0x00, 0xba, 0x91, 0x78,
-	0x0c, 0x56, 0x1c, 0x35, 0x73, 0xac, 0x38, 0xc2, 0x3b, 0x70, 0x94, 0xc9, 0x94, 0x54, 0x21, 0x17,
-	0xad, 0xbe, 0x23, 0x10, 0xe1, 0x60, 0x0b, 0xf8, 0xd8, 0x14, 0xcc, 0x79, 0xab, 0x88, 0x53, 0xb9,
-	0x24, 0x73, 0xe3, 0x41, 0xad, 0xf8, 0x4d, 0xe0, 0x04, 0x9c, 0x38, 0x5b, 0x96, 0xa4, 0xd4, 0xeb,
-	0x5c, 0x69, 0x7e, 0x68, 0xea, 0x7d, 0x0a, 0x9f, 0x81, 0x9d, 0xc8, 0x39, 0x25, 0x8a, 0xdb, 0x93,
-	0xf1, 0x99, 0x73, 0x7e, 0x2f, 0xe8, 0x05, 0x10, 0x74, 0x56, 0x83, 0x2b, 0xd3, 0xf5, 0x22, 0xd3,
-	0xe5, 0x3a, 0x6c, 0x24, 0xde, 0x05, 0x38, 0x3d, 0x1a, 0x5d, 0x18, 0x7f, 0xa4, 0x75, 0xb3, 0xce,
-	0xf6, 0x88, 0xb7, 0xe1, 0x70, 0x25, 0x93, 0xaa, 0xdd, 0xa5, 0x06, 0x4f, 0xad, 0x27, 0x4c, 0x4c,
-	0xe1, 0xe4, 0x15, 0xe9, 0x6e, 0xbe, 0x0a, 0x49, 0x15, 0x79, 0xa6, 0x08, 0x2f, 0xa0, 0x79, 0x03,
-	0x43, 0x73, 0x66, 0x6c, 0x9d, 0x0e, 0xd8, 0x0a, 0xfb, 0xbd, 0x62, 0x06, 0xa7, 0xb3, 0x22, 0x92,
-	0x9a, 0x7a, 0x0d, 0xf4, 0xa9, 0x22, 0xb5, 0x9f, 0x74, 0x9b, 0xa5, 0xd5, 0xcb, 0xf2, 0x04, 0x6c,
-	0xa5, 0xa5, 0xae, 0x54, 0x93, 0x70, 0x83, 0x84, 0x07, 0x7c, 0x7f, 0x6c, 0xed, 0xf6, 0xfc, 0x8b,
-	0x05, 0xd7, 0x2f, 0x1b, 0x6b, 0xf8, 0x16, 0x6e, 0x4d, 0x75, 0x49, 0x32, 0xed, 0xed, 0x85, 0x77,
-	0x07, 0xac, 0xd7, 0xdf, 0x93, 0x37, 0xb4, 0x99, 0x18, 0x3d, 0x64, 0xf8, 0x1e, 0x6e, 0x5e, 0xc5,
-	0x4a, 0xff, 0xc7, 0xb8, 0xdd, 0xf7, 0xfb, 0x7b, 0xc4, 0x62, 0x84, 0x12, 0xdc, 0x3f, 0x57, 0xc2,
-	0xfb, 0x3b, 0xd2, 0x81, 0x20, 0xbd, 0x07, 0xff, 0xe8, 0x6a, 0xaf, 0x78, 0xee, 0x7e, 0xdb, 0xf8,
-	0xec, 0xfb, 0xc6, 0x67, 0x3f, 0x36, 0x3e, 0xfb, 0xfa, 0xd3, 0x1f, 0xcd, 0x6d, 0xf3, 0x8b, 0x3d,
-	0xfe, 0x15, 0x00, 0x00, 0xff, 0xff, 0x92, 0x5c, 0xd9, 0x78, 0x74, 0x03, 0x00, 0x00,
+var fileDescriptor_deployer_3a9c780961773330 = []byte{
+	// 441 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x53, 0x5d, 0x6b, 0x13, 0x41,
+	0x14, 0xcd, 0x6c, 0xda, 0xc4, 0xde, 0x48, 0x8d, 0x97, 0xd2, 0x0e, 0x41, 0x43, 0x18, 0x15, 0xf2,
+	0xb4, 0x68, 0xfa, 0x62, 0xf5, 0x4d, 0xaa, 0x22, 0x14, 0x95, 0x2d, 0xc5, 0x47, 0x99, 0x26, 0x97,
+	0xba, 0xb8, 0x5f, 0xee, 0xcc, 0x16, 0xf2, 0x3f, 0x04, 0xfd, 0x49, 0x3e, 0xfa, 0x13, 0x24, 0xfe,
+	0x11, 0xd9, 0xd9, 0x19, 0x77, 0xd7, 0xb8, 0x88, 0x6f, 0x73, 0xee, 0x3d, 0xe7, 0xce, 0x3d, 0x73,
+	0x76, 0x61, 0x7f, 0x45, 0x59, 0x94, 0xae, 0x29, 0xf7, 0xb3, 0x3c, 0xd5, 0x29, 0x8e, 0x1c, 0x7e,
+	0x7f, 0xfd, 0x48, 0xbc, 0x85, 0xf1, 0xa9, 0x81, 0x31, 0x25, 0xfa, 0x45, 0x18, 0x69, 0xca, 0x91,
+	0xc3, 0x70, 0x19, 0x15, 0x4a, 0x53, 0xce, 0xd9, 0x8c, 0xcd, 0xf7, 0x02, 0x07, 0x51, 0xc0, 0x4d,
+	0x27, 0x7e, 0x2d, 0x63, 0xe2, 0x9e, 0x69, 0xb7, 0x6a, 0xe2, 0xb3, 0x07, 0x50, 0x8f, 0xc4, 0x7d,
+	0xf0, 0xc2, 0x95, 0x9d, 0xe3, 0x85, 0x2b, 0xbc, 0x03, 0x7b, 0x89, 0x8c, 0x49, 0x65, 0x72, 0xe9,
+	0xf4, 0x75, 0x01, 0x11, 0x76, 0x4a, 0xc0, 0xfb, 0xa6, 0x61, 0xce, 0xa5, 0x22, 0x8c, 0xe5, 0x15,
+	0x99, 0x1b, 0x77, 0x2a, 0xc5, 0xef, 0x02, 0xfa, 0x30, 0x0c, 0x93, 0xab, 0x9c, 0x94, 0xe2, 0xbb,
+	0x33, 0x36, 0x1f, 0x2d, 0x0e, 0xfc, 0x86, 0x3f, 0xff, 0x55, 0xd5, 0x0b, 0x1c, 0x09, 0x9f, 0xc2,
+	0x20, 0x92, 0x97, 0x14, 0x29, 0x3e, 0x98, 0xf5, 0xe7, 0xa3, 0xc5, 0xbd, 0x16, 0xbd, 0x5e, 0xdc,
+	0x3f, 0x33, 0xac, 0xe7, 0x89, 0xce, 0xd7, 0x81, 0x95, 0x4c, 0x4e, 0x60, 0xd4, 0x28, 0xe3, 0x18,
+	0xfa, 0x1f, 0x69, 0x6d, 0xcd, 0x95, 0x47, 0x3c, 0x80, 0xdd, 0x6b, 0x19, 0x15, 0xce, 0x59, 0x05,
+	0x9e, 0x78, 0x8f, 0x99, 0x38, 0x86, 0xa1, 0xdd, 0xa5, 0x24, 0x2d, 0x23, 0xa9, 0x94, 0x15, 0x56,
+	0xa0, 0xb4, 0xfe, 0x21, 0x55, 0xda, 0x2a, 0xcd, 0x59, 0x9c, 0xc3, 0xe1, 0x4b, 0xd2, 0xf5, 0x52,
+	0x2a, 0x20, 0x95, 0xa5, 0x89, 0x22, 0x3c, 0x01, 0x1b, 0xa3, 0x29, 0x73, 0x66, 0xbc, 0x1c, 0x75,
+	0x78, 0x09, 0x9a, 0x5c, 0x71, 0x01, 0x47, 0x17, 0xd9, 0x4a, 0x6a, 0x6a, 0x10, 0xe8, 0x53, 0x41,
+	0x6a, 0x3b, 0x2c, 0x17, 0x87, 0xd7, 0x88, 0xe3, 0x10, 0x06, 0x4a, 0x4b, 0x5d, 0x28, 0x1b, 0x92,
+	0x45, 0x62, 0x02, 0x7c, 0x7b, 0x6c, 0xb5, 0xed, 0xe2, 0x8b, 0x07, 0x37, 0x4e, 0xed, 0x6a, 0xf8,
+	0x06, 0x6e, 0x9f, 0xeb, 0x9c, 0x64, 0xdc, 0xf0, 0x85, 0x77, 0x3b, 0x56, 0xaf, 0x3e, 0xc9, 0x49,
+	0x97, 0x33, 0xd1, 0x7b, 0xc8, 0xf0, 0x1d, 0xdc, 0x3a, 0x0b, 0x95, 0xfe, 0x8f, 0x71, 0xed, 0xd0,
+	0xff, 0xfe, 0xc4, 0xa2, 0x87, 0x12, 0xc6, 0x7f, 0x5a, 0xc2, 0xfb, 0x2d, 0x69, 0xc7, 0x43, 0x4e,
+	0x1e, 0xfc, 0x83, 0xe5, 0xae, 0x78, 0x36, 0xfe, 0xb6, 0x99, 0xb2, 0xef, 0x9b, 0x29, 0xfb, 0xb1,
+	0x99, 0xb2, 0xaf, 0x3f, 0xa7, 0xbd, 0xcb, 0x81, 0xf9, 0x4b, 0x8f, 0x7f, 0x05, 0x00, 0x00, 0xff,
+	0xff, 0xec, 0x45, 0x11, 0xfc, 0xb7, 0x03, 0x00, 0x00,
 }

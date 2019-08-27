@@ -18,8 +18,13 @@ message Deployment {
   string namespace           = 2;
   string name                = 3;
   string imageName           = 4;             
-  string ingressHost         = 5;
+  Ingress ingress            = 5;
   map<string, string> labels = 6;
+}
+
+message Ingress {
+  string class = 1;
+  string host  = 2;
 }
 
 message GetDeploymentsResponse {

@@ -3,7 +3,7 @@ install:
 	cd cmd/ds-deployer && go install
 
 proto:
-	cd apis/deployer/v1 && protoc --gofast_out=. deployer.proto
+	cd apis/deployer/v1 && protoc --gofast_out=plugins=grpc:. deployer.proto
 
 image:
 	# dotmesh/dotscience-deployer:latest
