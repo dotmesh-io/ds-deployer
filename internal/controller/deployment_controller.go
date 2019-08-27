@@ -62,12 +62,12 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 	if deployment.Labels == nil {
 		deployment.Labels = map[string]string{}
 	}
-	if deployment.Labels["hello"] == "world" {
+	if deployment.Labels["heritage"] == "deployer.dotscience.com" {
 		return reconcile.Result{}, nil
 	}
 
 	// Update the Deployment
-	deployment.Labels["hello"] = "world"
+	deployment.Labels["heritage"] = "deployer.dotscience.com"
 	err = r.client.Update(context.TODO(), deployment)
 	if err != nil {
 		log.Error(err, "Could not write Deployment")
