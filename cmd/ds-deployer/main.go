@@ -10,65 +10,75 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	deploymentController "github.com/dotmesh-io/ds-deployer/internal/controller"
+	"github.com/dotmesh-io/ds-deployer/pkg/logger"
 )
 
 const controllerName = "deployment-controller"
 
-var log = logf.Log.WithName(controllerName)
-
 func main() {
-	logf.SetLogger(zap.Logger(false))
-	entryLog := log.WithName("entrypoint")
+
+	logger := logger.GetInstance().Sugar()
 
 	// Setup a Manager
-	entryLog.Info("setting up manager")
+	logger.Info("setting up manager")
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{})
 	if err != nil {
-		entryLog.Error(err, "unable to set up overall controller manager")
+		logger.Errorw("unable to set up overall controller manager",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 
 	controllerOptions := []deploymentController.Option{
 		deploymentController.WithClient(mgr.GetClient()),
-		deploymentController.WithLogger(log.WithName("deployment-reconciler")),
+		deploymentController.WithLogger(logger.With("module", "deployment-reconciler")),
 	}
 
 	deploymentReconciler, err := deploymentController.New(controllerOptions...)
 	if err != nil {
-		entryLog.Error(err, "unable to set up dotscience deployment controller")
+		logger.Errorw("unable to set up dotscience deployment controller",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 
 	// Setup a new controller to reconcile dotscience deployments
-	entryLog.Info("Setting up controller")
+	logger.Info("Setting up controller")
 	c, err := controller.New(controllerName, mgr, controller.Options{
 		Reconciler: deploymentReconciler,
 	})
 	if err != nil {
-		entryLog.Error(err, "unable to set up individual controller")
+		logger.Errorw("unable to set up individual controller",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 
 	// Watch Deployment and enqueue ReplicaSet object key
 	if err := c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForObject{}); err != nil {
-		entryLog.Error(err, "unable to watch Deployment")
+		logger.Error("unable to watch Deployment",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 
 	if err := c.Watch(&source.Kind{Type: &v1beta1.Ingress{}}, &handler.EnqueueRequestForObject{}); err != nil {
-		entryLog.Error(err, "unable to watch Ingress")
+		logger.Error("unable to watch Ingress",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 
 	if err := c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForObject{}); err != nil {
-		entryLog.Error(err, "unable to watch Service")
+
+		logger.Error("unable to watch Service",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 
@@ -79,17 +89,11 @@ func main() {
 	// 	os.Exit(1)
 	// }
 
-	// Setup webhooks
-	entryLog.Info("setting up webhook server")
-	// hookServer := mgr.GetWebhookServer()
-
-	// entryLog.Info("registering webhooks to the webhook server")
-	// hookServer.Register("/mutate-v1-pod", &webhook.Admission{Handler: &podAnnotator{}})
-	// hookServer.Register("/validate-v1-pod", &webhook.Admission{Handler: &podValidator{}})
-
-	entryLog.Info("starting manager")
+	logger.Info("starting manager")
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		entryLog.Error(err, "unable to run manager")
+		logger.Error("unable to run manager",
+			"error", err,
+		)
 		os.Exit(1)
 	}
 }

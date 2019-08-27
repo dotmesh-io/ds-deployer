@@ -1,7 +1,8 @@
 package controller
 
 import (
-	"github.com/go-logr/logr"
+	// "github.com/go-logr/logr"
+	"go.uber.org/zap"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -15,8 +16,8 @@ func WithClient(client client.Client) Option {
 	}
 }
 
-func WithLogger(log logr.Logger) Option {
+func WithLogger(logger *zap.SugaredLogger) Option {
 	return func(r *Reconciler) {
-		r.log = log
+		r.logger = logger
 	}
 }
