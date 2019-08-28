@@ -4,9 +4,14 @@ package deployer_v1;
 service Deployer {   
   rpc StreamDeployments(DeploymentFilter) returns (stream Deployment) {}
   rpc ListDeployments(DeploymentFilter) returns (GetDeploymentsResponse) {}
- 
   rpc UpdateDeployment(UpdateDeploymentRequest) returns (UpdateDeploymentResponse) {}
+
+
+  rpc UpdateDeployer(UpdateDeployerRequest) returns (UpdateDeployerResponse) {}
 }
+
+message UpdateDeployerRequest {}
+message UpdateDeployerResponse {}
 
 message DeploymentFilter {
   string cluster      = 1;
