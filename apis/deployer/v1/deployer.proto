@@ -19,12 +19,13 @@ message DeploymentFilter {
 }
 
 message Deployment {
-  string id                  = 1;
-  string namespace           = 2;
-  string name                = 3;
-  string imageName           = 4;             
-  Ingress ingress            = 5;
-  map<string, string> labels = 6;
+  string id                  = 1; // deployment ID
+  string namespace           = 2; // deployment namespace
+  string name                = 3; // deployment name
+  string imageName           = 4; // model image
+  int64  containerPort       = 5; // on which port container starts HTTP server    
+  Ingress ingress            = 6; // ingress class
+  map<string, string> labels = 7; // optional labels
 }
 
 message Ingress {
