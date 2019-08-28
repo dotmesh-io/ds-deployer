@@ -19,6 +19,7 @@ type Reconciler struct {
 	// client can be used to retrieve objects from the APIServer.
 	client client.Client
 	logger *zap.SugaredLogger
+	cache  *KubernetesCache
 }
 
 func New(opts ...Option) (*Reconciler, error) {
