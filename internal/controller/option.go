@@ -21,3 +21,9 @@ func WithLogger(logger *zap.SugaredLogger) Option {
 		r.logger = logger
 	}
 }
+
+func WithCache(cache *KubernetesCache) Option {
+	return func(r *Reconciler) {
+		r.cache = cache
+	}
+}
