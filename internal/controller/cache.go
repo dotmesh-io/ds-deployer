@@ -24,6 +24,10 @@ type KubernetesCache struct {
 	modelDeployments map[Meta]*deployer_v1.Deployment
 }
 
+func NewKubernetesCache() *KubernetesCache {
+	return &KubernetesCache{}
+}
+
 // Meta holds the name and namespace of a Kubernetes object.
 type Meta struct {
 	name, namespace string
