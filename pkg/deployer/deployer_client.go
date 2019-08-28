@@ -24,11 +24,16 @@ const (
 	maxBackOff = 10 * time.Second
 )
 
+type ObjectCache interface {
+	Insert(obj interface{}) bool
+}
+
 type Opts struct {
-	Addr       string
-	Token      string
-	RequireTLS bool
-	Logger     *zap.SugaredLogger
+	Addr        string
+	Token       string
+	RequireTLS  bool
+	ObjectCache ObjectCache
+	Logger      *zap.SugaredLogger
 }
 
 type DefaultClient struct {
@@ -42,6 +47,8 @@ type DefaultClient struct {
 
 	connectedMu sync.Mutex
 	connected   bool
+
+	objectCache ObjectCache
 
 	logger *zap.SugaredLogger
 }
@@ -66,8 +73,9 @@ func New(opts *Opts) *DefaultClient {
 	}
 
 	return &DefaultClient{
-		opts:     opts,
-		dialOpts: dialOpts,
+		opts:        opts,
+		dialOpts:    dialOpts,
+		objectCache: opts.ObjectCache,
 	}
 }
 
