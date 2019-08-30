@@ -85,11 +85,12 @@ func New(opts *Opts) *DefaultClient {
 }
 
 func (c *DefaultClient) startPeriodicSync(ctx context.Context) {
-	ticker := time.NewTicker(10 * time.Second)
+
+	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		deploymentsResp, err := c.client.ListDeployments(ctx, &deployer_v1.DeploymentFilter{})
+		err := c.syncDeployments(ctx)
 		if err != nil {
 			c.logger.Errorw("failed to retrieve deployments",
 				"error", err,
@@ -97,21 +98,23 @@ func (c *DefaultClient) startPeriodicSync(ctx context.Context) {
 			continue
 		}
 
-		for _, d := range deploymentsResp.Deployments {
-			// c.logger.Infow("configured deployment detected",
-			// 	"image_name", d.GetImageName(),
-			// 	"id", d.GetId(),
-			// 	"name", d.GetName(),
-			// 	"namespace", d.GetNamespace(),
-			// 	"ingress_host", d.GetIngress().GetHost(),
-			// 	"ingress_class", d.GetIngress().GetClass(),
-			// )
-			c.objectCache.Insert(d)
-		}
-
 		// TODO: check what's in the cache and remove anything that shouldn't be there anymore
 
 	}
+}
+
+func (c *DefaultClient) syncDeployments(ctx context.Context) error {
+	deploymentsResp, err := c.client.ListDeployments(ctx, &deployer_v1.DeploymentFilter{})
+	if err != nil {
+
+		return err
+	}
+
+	for _, d := range deploymentsResp.Deployments {
+		c.objectCache.Insert(d)
+	}
+
+	return nil
 }
 
 func (c *DefaultClient) StartDeployer(ctx context.Context) error {
