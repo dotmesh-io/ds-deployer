@@ -8,22 +8,22 @@ import (
 )
 
 // Option configures a controller option.
-type Option func(*Reconciler)
+type Option func(*Controller)
 
 func WithClient(client client.Client) Option {
-	return func(r *Reconciler) {
+	return func(r *Controller) {
 		r.client = client
 	}
 }
 
 func WithLogger(logger *zap.SugaredLogger) Option {
-	return func(r *Reconciler) {
+	return func(r *Controller) {
 		r.logger = logger
 	}
 }
 
 func WithCache(cache *KubernetesCache) Option {
-	return func(r *Reconciler) {
+	return func(r *Controller) {
 		r.cache = cache
 	}
 }
