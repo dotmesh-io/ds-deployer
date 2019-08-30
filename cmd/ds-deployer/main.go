@@ -2,19 +2,23 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
+	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	deploymentController "github.com/dotmesh-io/ds-deployer/internal/controller"
@@ -37,6 +41,8 @@ func main() {
 	token := run.Flag("token", "Authentication token (each registered runner gets a token)").Default(os.Getenv(EnvAuthToken)).String()
 	requireTLS := run.Flag("require-tls", "Require TLS for connection to the server").Default("true").Bool()
 	serverAddr := run.Flag("addr", "Server address").Default(gatewayServerAddress).String()
+	kubeconfig := run.Flag("kubeconfig", "path to kubeconfig (if not in running inside a cluster)").Default(filepath.Join(os.Getenv("HOME"), ".kube", "config")).String()
+	inCluster := run.Flag("incluster", "use in cluster configuration.").Bool()
 
 	logger := logger.GetInstance().Sugar()
 
@@ -48,13 +54,18 @@ func main() {
 	case run.FullCommand():
 		// Setup a Manager
 		logger.Info("setting up manager")
-		mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{})
+		mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
+			Port:               7777,
+			MetricsBindAddress: "0",
+		})
 		if err != nil {
 			logger.Errorw("unable to set up overall controller manager",
 				"error", err,
 			)
 			os.Exit(1)
 		}
+
+		kubeClient := newClient(*kubeconfig, *inCluster)
 
 		cache := deploymentController.NewKubernetesCache()
 
@@ -124,21 +135,28 @@ func main() {
 			Token:       *token,
 			RequireTLS:  *requireTLS,
 			ObjectCache: cache,
+			Logger:      logger,
 		})
 
 		var g workgroup.Group
 
-		g.Add(func(stop <-chan struct{}) error {
-			logger.Info("starting manager")
-			if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-				logger.Error("unable to run manager",
-					"error", err,
-				)
-				return err
-			}
+		buf := deploymentController.NewBuffer(&g, cache, logger, 128)
 
-			return nil
-		})
+		deploymentController.WatchServices(&g, kubeClient, logger, buf)
+		deploymentController.WatchDeployments(&g, kubeClient, logger, buf)
+		deploymentController.WatchIngress(&g, kubeClient, logger, buf)
+
+		// g.Add(func(stop <-chan struct{}) error {
+		// 	logger.Info("starting manager")
+		// 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+		// 		logger.Error("unable to run manager",
+		// 			"error", err,
+		// 		)
+		// 		return err
+		// 	}
+
+		// 	return nil
+		// })
 
 		g.Add(func(stop <-chan struct{}) error {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -151,6 +169,20 @@ func main() {
 			return gatewayClient.StartDeployer(ctx)
 		})
 
+		// start controller
+		g.Add(func(stop <-chan struct{}) error {
+			logger.Info("starting controller")
+			defer logger.Info("controller stopped")
+			ctx, cancel := context.WithCancel(context.Background())
+
+			go func() {
+				<-stop
+				cancel()
+			}()
+
+			return deploymentReconciler.Start(ctx)
+		})
+
 		err = g.Run()
 		if err != nil {
 			logger.Errorf("deployer stopped with an error: %s", err)
@@ -158,4 +190,27 @@ func main() {
 		}
 	}
 
+}
+
+func newClient(kubeconfig string, inCluster bool) *kubernetes.Clientset {
+	var err error
+	var config *rest.Config
+	if kubeconfig != "" && !inCluster {
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		check(err)
+	} else {
+		config, err = rest.InClusterConfig()
+		check(err)
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	check(err)
+	return client
+}
+
+func check(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
