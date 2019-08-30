@@ -27,10 +27,13 @@ type KubernetesCache struct {
 	modelDeployments map[Meta]*deployer_v1.Deployment
 
 	cond.Cond
+
+	// hash of the api key
+	controllerIdentifier string
 }
 
-func NewKubernetesCache() *KubernetesCache {
-	return &KubernetesCache{}
+func NewKubernetesCache(controllerIdentifier string) *KubernetesCache {
+	return &KubernetesCache{controllerIdentifier: controllerIdentifier}
 }
 
 // Meta holds the name and namespace of a Kubernetes object.
@@ -60,6 +63,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 
 	switch obj := obj.(type) {
 	case *corev1.Service:
+
+		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+			return false
+		}
+
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.services == nil {
 			kc.services = make(map[Meta]*corev1.Service)
@@ -68,6 +76,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		// return kc.serviceTriggersRebuild(obj)
 		return true
 	case *v1beta1.Ingress:
+
+		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+			return false
+		}
+
 		class := getIngressClassAnnotation(obj.Annotations)
 		if class != "" && class != kc.ingressClass() {
 			return false
@@ -80,6 +93,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		kc.ingresses[m] = obj
 		return true
 	case *appsv1.Deployment:
+
+		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+			return false
+		}
+
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.deployments == nil {
 			kc.deployments = make(map[Meta]*appsv1.Deployment)
