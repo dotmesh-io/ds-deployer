@@ -33,7 +33,7 @@ func (m *UpdateDeployerRequest) Reset()         { *m = UpdateDeployerRequest{} }
 func (m *UpdateDeployerRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateDeployerRequest) ProtoMessage()    {}
 func (*UpdateDeployerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{0}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{0}
 }
 func (m *UpdateDeployerRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -72,7 +72,7 @@ func (m *UpdateDeployerResponse) Reset()         { *m = UpdateDeployerResponse{}
 func (m *UpdateDeployerResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateDeployerResponse) ProtoMessage()    {}
 func (*UpdateDeployerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{1}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{1}
 }
 func (m *UpdateDeployerResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -113,7 +113,7 @@ func (m *DeploymentFilter) Reset()         { *m = DeploymentFilter{} }
 func (m *DeploymentFilter) String() string { return proto.CompactTextString(m) }
 func (*DeploymentFilter) ProtoMessage()    {}
 func (*DeploymentFilter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{2}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{2}
 }
 func (m *DeploymentFilter) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -157,12 +157,13 @@ func (m *DeploymentFilter) GetDeployerName() string {
 }
 
 type Deployment struct {
-	Id                   string            `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Namespace            string            `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Name                 string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	ImageName            string            `protobuf:"bytes,4,opt,name=imageName,proto3" json:"imageName,omitempty"`
-	ContainerPort        int64             `protobuf:"varint,5,opt,name=containerPort,proto3" json:"containerPort,omitempty"`
-	Ingress              *Ingress          `protobuf:"bytes,6,opt,name=ingress" json:"ingress,omitempty"`
+	Id        string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Name      string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	// string imageName           = 4; // model image
+	// int64  containerPort       = 5; // on which port container starts HTTP server
+	Deployment           *DeploymentSpec   `protobuf:"bytes,4,opt,name=deployment" json:"deployment,omitempty"`
+	Ingress              *IngressSpec      `protobuf:"bytes,6,opt,name=ingress" json:"ingress,omitempty"`
 	Labels               map[string]string `protobuf:"bytes,7,rep,name=labels" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -173,7 +174,7 @@ func (m *Deployment) Reset()         { *m = Deployment{} }
 func (m *Deployment) String() string { return proto.CompactTextString(m) }
 func (*Deployment) ProtoMessage()    {}
 func (*Deployment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{3}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{3}
 }
 func (m *Deployment) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -223,21 +224,14 @@ func (m *Deployment) GetName() string {
 	return ""
 }
 
-func (m *Deployment) GetImageName() string {
+func (m *Deployment) GetDeployment() *DeploymentSpec {
 	if m != nil {
-		return m.ImageName
+		return m.Deployment
 	}
-	return ""
+	return nil
 }
 
-func (m *Deployment) GetContainerPort() int64 {
-	if m != nil {
-		return m.ContainerPort
-	}
-	return 0
-}
-
-func (m *Deployment) GetIngress() *Ingress {
+func (m *Deployment) GetIngress() *IngressSpec {
 	if m != nil {
 		return m.Ingress
 	}
@@ -251,26 +245,27 @@ func (m *Deployment) GetLabels() map[string]string {
 	return nil
 }
 
-type Ingress struct {
-	Class                string   `protobuf:"bytes,1,opt,name=class,proto3" json:"class,omitempty"`
-	Host                 string   `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+type DeploymentSpec struct {
+	Replicas             int64    `protobuf:"varint,1,opt,name=replicas,proto3" json:"replicas,omitempty"`
+	Image                string   `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	Ports                []int64  `protobuf:"varint,3,rep,packed,name=ports" json:"ports,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Ingress) Reset()         { *m = Ingress{} }
-func (m *Ingress) String() string { return proto.CompactTextString(m) }
-func (*Ingress) ProtoMessage()    {}
-func (*Ingress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{4}
+func (m *DeploymentSpec) Reset()         { *m = DeploymentSpec{} }
+func (m *DeploymentSpec) String() string { return proto.CompactTextString(m) }
+func (*DeploymentSpec) ProtoMessage()    {}
+func (*DeploymentSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{4}
 }
-func (m *Ingress) XXX_Unmarshal(b []byte) error {
+func (m *DeploymentSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Ingress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *DeploymentSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Ingress.Marshal(b, m, deterministic)
+		return xxx_messageInfo_DeploymentSpec.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalTo(b)
@@ -280,26 +275,88 @@ func (m *Ingress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Ingress) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Ingress.Merge(dst, src)
+func (dst *DeploymentSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeploymentSpec.Merge(dst, src)
 }
-func (m *Ingress) XXX_Size() int {
+func (m *DeploymentSpec) XXX_Size() int {
 	return m.Size()
 }
-func (m *Ingress) XXX_DiscardUnknown() {
-	xxx_messageInfo_Ingress.DiscardUnknown(m)
+func (m *DeploymentSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeploymentSpec.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Ingress proto.InternalMessageInfo
+var xxx_messageInfo_DeploymentSpec proto.InternalMessageInfo
 
-func (m *Ingress) GetClass() string {
+func (m *DeploymentSpec) GetReplicas() int64 {
+	if m != nil {
+		return m.Replicas
+	}
+	return 0
+}
+
+func (m *DeploymentSpec) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *DeploymentSpec) GetPorts() []int64 {
+	if m != nil {
+		return m.Ports
+	}
+	return nil
+}
+
+type IngressSpec struct {
+	Class                string   `protobuf:"bytes,1,opt,name=class,proto3" json:"class,omitempty"`
+	Host                 string   `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *IngressSpec) Reset()         { *m = IngressSpec{} }
+func (m *IngressSpec) String() string { return proto.CompactTextString(m) }
+func (*IngressSpec) ProtoMessage()    {}
+func (*IngressSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{5}
+}
+func (m *IngressSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *IngressSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_IngressSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *IngressSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IngressSpec.Merge(dst, src)
+}
+func (m *IngressSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *IngressSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_IngressSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IngressSpec proto.InternalMessageInfo
+
+func (m *IngressSpec) GetClass() string {
 	if m != nil {
 		return m.Class
 	}
 	return ""
 }
 
-func (m *Ingress) GetHost() string {
+func (m *IngressSpec) GetHost() string {
 	if m != nil {
 		return m.Host
 	}
@@ -317,7 +374,7 @@ func (m *GetDeploymentsResponse) Reset()         { *m = GetDeploymentsResponse{}
 func (m *GetDeploymentsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetDeploymentsResponse) ProtoMessage()    {}
 func (*GetDeploymentsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{5}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{6}
 }
 func (m *GetDeploymentsResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -366,7 +423,7 @@ func (m *UpdateDeploymentRequest) Reset()         { *m = UpdateDeploymentRequest
 func (m *UpdateDeploymentRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateDeploymentRequest) ProtoMessage()    {}
 func (*UpdateDeploymentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{6}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{7}
 }
 func (m *UpdateDeploymentRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -426,7 +483,7 @@ func (m *UpdateDeploymentResponse) Reset()         { *m = UpdateDeploymentRespon
 func (m *UpdateDeploymentResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateDeploymentResponse) ProtoMessage()    {}
 func (*UpdateDeploymentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_deployer_68ad51567faa9c8b, []int{7}
+	return fileDescriptor_deployer_d1d4a173c01ba772, []int{8}
 }
 func (m *UpdateDeploymentResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -461,7 +518,8 @@ func init() {
 	proto.RegisterType((*DeploymentFilter)(nil), "deployer_v1.DeploymentFilter")
 	proto.RegisterType((*Deployment)(nil), "deployer_v1.Deployment")
 	proto.RegisterMapType((map[string]string)(nil), "deployer_v1.Deployment.LabelsEntry")
-	proto.RegisterType((*Ingress)(nil), "deployer_v1.Ingress")
+	proto.RegisterType((*DeploymentSpec)(nil), "deployer_v1.DeploymentSpec")
+	proto.RegisterType((*IngressSpec)(nil), "deployer_v1.IngressSpec")
 	proto.RegisterType((*GetDeploymentsResponse)(nil), "deployer_v1.GetDeploymentsResponse")
 	proto.RegisterType((*UpdateDeploymentRequest)(nil), "deployer_v1.UpdateDeploymentRequest")
 	proto.RegisterType((*UpdateDeploymentResponse)(nil), "deployer_v1.UpdateDeploymentResponse")
@@ -774,26 +832,25 @@ func (m *Deployment) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintDeployer(dAtA, i, uint64(len(m.Name)))
 		i += copy(dAtA[i:], m.Name)
 	}
-	if len(m.ImageName) > 0 {
+	if m.Deployment != nil {
 		dAtA[i] = 0x22
 		i++
-		i = encodeVarintDeployer(dAtA, i, uint64(len(m.ImageName)))
-		i += copy(dAtA[i:], m.ImageName)
-	}
-	if m.ContainerPort != 0 {
-		dAtA[i] = 0x28
-		i++
-		i = encodeVarintDeployer(dAtA, i, uint64(m.ContainerPort))
+		i = encodeVarintDeployer(dAtA, i, uint64(m.Deployment.Size()))
+		n1, err := m.Deployment.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
 	}
 	if m.Ingress != nil {
 		dAtA[i] = 0x32
 		i++
 		i = encodeVarintDeployer(dAtA, i, uint64(m.Ingress.Size()))
-		n1, err := m.Ingress.MarshalTo(dAtA[i:])
+		n2, err := m.Ingress.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n2
 	}
 	if len(m.Labels) > 0 {
 		for k, _ := range m.Labels {
@@ -818,7 +875,7 @@ func (m *Deployment) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Ingress) Marshal() (dAtA []byte, err error) {
+func (m *DeploymentSpec) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -828,7 +885,57 @@ func (m *Ingress) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Ingress) MarshalTo(dAtA []byte) (int, error) {
+func (m *DeploymentSpec) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Replicas != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintDeployer(dAtA, i, uint64(m.Replicas))
+	}
+	if len(m.Image) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintDeployer(dAtA, i, uint64(len(m.Image)))
+		i += copy(dAtA[i:], m.Image)
+	}
+	if len(m.Ports) > 0 {
+		dAtA4 := make([]byte, len(m.Ports)*10)
+		var j3 int
+		for _, num1 := range m.Ports {
+			num := uint64(num1)
+			for num >= 1<<7 {
+				dAtA4[j3] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j3++
+			}
+			dAtA4[j3] = uint8(num)
+			j3++
+		}
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintDeployer(dAtA, i, uint64(j3))
+		i += copy(dAtA[i:], dAtA4[:j3])
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *IngressSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *IngressSpec) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1003,12 +1110,9 @@ func (m *Deployment) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovDeployer(uint64(l))
 	}
-	l = len(m.ImageName)
-	if l > 0 {
+	if m.Deployment != nil {
+		l = m.Deployment.Size()
 		n += 1 + l + sovDeployer(uint64(l))
-	}
-	if m.ContainerPort != 0 {
-		n += 1 + sovDeployer(uint64(m.ContainerPort))
 	}
 	if m.Ingress != nil {
 		l = m.Ingress.Size()
@@ -1028,7 +1132,30 @@ func (m *Deployment) Size() (n int) {
 	return n
 }
 
-func (m *Ingress) Size() (n int) {
+func (m *DeploymentSpec) Size() (n int) {
+	var l int
+	_ = l
+	if m.Replicas != 0 {
+		n += 1 + sovDeployer(uint64(m.Replicas))
+	}
+	l = len(m.Image)
+	if l > 0 {
+		n += 1 + l + sovDeployer(uint64(l))
+	}
+	if len(m.Ports) > 0 {
+		l = 0
+		for _, e := range m.Ports {
+			l += sovDeployer(uint64(e))
+		}
+		n += 1 + sovDeployer(uint64(l)) + l
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *IngressSpec) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.Class)
@@ -1432,9 +1559,9 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ImageName", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Deployment", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowDeployer
@@ -1444,40 +1571,25 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthDeployer
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ImageName = string(dAtA[iNdEx:postIndex])
+			if m.Deployment == nil {
+				m.Deployment = &DeploymentSpec{}
+			}
+			if err := m.Deployment.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ContainerPort", wireType)
-			}
-			m.ContainerPort = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowDeployer
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ContainerPort |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Ingress", wireType)
@@ -1505,7 +1617,7 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Ingress == nil {
-				m.Ingress = &Ingress{}
+				m.Ingress = &IngressSpec{}
 			}
 			if err := m.Ingress.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1651,7 +1763,7 @@ func (m *Deployment) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Ingress) Unmarshal(dAtA []byte) error {
+func (m *DeploymentSpec) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1674,10 +1786,171 @@ func (m *Ingress) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Ingress: wiretype end group for non-group")
+			return fmt.Errorf("proto: DeploymentSpec: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Ingress: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: DeploymentSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Replicas", wireType)
+			}
+			m.Replicas = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDeployer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Replicas |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Image", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDeployer
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDeployer
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Image = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType == 0 {
+				var v int64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowDeployer
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= (int64(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				m.Ports = append(m.Ports, v)
+			} else if wireType == 2 {
+				var packedLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowDeployer
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					packedLen |= (int(b) & 0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if packedLen < 0 {
+					return ErrInvalidLengthDeployer
+				}
+				postIndex := iNdEx + packedLen
+				if postIndex > l {
+					return io.ErrUnexpectedEOF
+				}
+				for iNdEx < postIndex {
+					var v int64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowDeployer
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= (int64(b) & 0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					m.Ports = append(m.Ports, v)
+				}
+			} else {
+				return fmt.Errorf("proto: wrong wireType = %d for field Ports", wireType)
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDeployer(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDeployer
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *IngressSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDeployer
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IngressSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IngressSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2136,40 +2409,41 @@ var (
 	ErrIntOverflowDeployer   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("deployer.proto", fileDescriptor_deployer_68ad51567faa9c8b) }
+func init() { proto.RegisterFile("deployer.proto", fileDescriptor_deployer_d1d4a173c01ba772) }
 
-var fileDescriptor_deployer_68ad51567faa9c8b = []byte{
-	// 500 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcd, 0x6e, 0xd3, 0x40,
-	0x10, 0xce, 0x3a, 0x6d, 0x42, 0x27, 0x10, 0xc2, 0xa8, 0x24, 0xab, 0x08, 0xa2, 0x68, 0x29, 0x52,
-	0x4e, 0x16, 0xa4, 0x17, 0x0a, 0x37, 0xc4, 0x8f, 0x90, 0x2a, 0xa8, 0x5c, 0x55, 0x1c, 0x38, 0xa0,
-	0x6d, 0x32, 0x2a, 0x16, 0xfe, 0xc3, 0xbb, 0xa9, 0x94, 0x37, 0xe1, 0x59, 0x78, 0x02, 0x8e, 0x3c,
-	0x02, 0x0a, 0xaf, 0xc0, 0x03, 0x20, 0xaf, 0xd7, 0x89, 0x9d, 0x60, 0x21, 0x6e, 0x3b, 0xdf, 0xcc,
-	0x37, 0x3b, 0xdf, 0xcc, 0xec, 0x42, 0x77, 0x4e, 0x49, 0x10, 0x2f, 0x29, 0x75, 0x93, 0x34, 0xd6,
-	0x31, 0x76, 0x0a, 0xfb, 0xe3, 0xf5, 0x63, 0x31, 0x80, 0xbb, 0x17, 0xc9, 0x5c, 0x6a, 0x7a, 0x61,
-	0x41, 0x8f, 0xbe, 0x2c, 0x48, 0x69, 0xc1, 0xa1, 0xbf, 0xed, 0x50, 0x49, 0x1c, 0x29, 0x12, 0x67,
-	0xd0, 0xcb, 0xb1, 0x90, 0x22, 0xfd, 0xca, 0x0f, 0x34, 0xa5, 0xc8, 0xa1, 0x3d, 0x0b, 0x16, 0x4a,
-	0x53, 0xca, 0xd9, 0x98, 0x4d, 0x0e, 0xbc, 0xc2, 0x44, 0x01, 0x37, 0x8b, 0xfb, 0xde, 0xca, 0x90,
-	0xb8, 0x63, 0xdc, 0x15, 0x4c, 0x7c, 0x73, 0x00, 0x36, 0x29, 0xb1, 0x0b, 0x8e, 0x3f, 0xb7, 0x79,
-	0x1c, 0x7f, 0x8e, 0xf7, 0xe0, 0x20, 0x92, 0x21, 0xa9, 0x44, 0xce, 0x0a, 0xfe, 0x06, 0x40, 0x84,
-	0xbd, 0xcc, 0xe0, 0x4d, 0xe3, 0x30, 0xe7, 0x8c, 0xe1, 0x87, 0xf2, 0x8a, 0xcc, 0x8d, 0x7b, 0x39,
-	0x63, 0x0d, 0xe0, 0x11, 0xdc, 0x9a, 0xc5, 0x91, 0x96, 0x7e, 0x44, 0xe9, 0x59, 0x9c, 0x6a, 0xbe,
-	0x3f, 0x66, 0x93, 0xa6, 0x57, 0x05, 0xd1, 0x85, 0xb6, 0x1f, 0x5d, 0xa5, 0xa4, 0x14, 0x6f, 0x8d,
-	0xd9, 0xa4, 0x33, 0x3d, 0x74, 0x4b, 0x8d, 0x73, 0xdf, 0xe4, 0x3e, 0xaf, 0x08, 0xc2, 0x67, 0xd0,
-	0x0a, 0xe4, 0x25, 0x05, 0x8a, 0xb7, 0xc7, 0xcd, 0x49, 0x67, 0xfa, 0xa0, 0x12, 0xbe, 0x91, 0xe7,
-	0x9e, 0x9a, 0xa8, 0x97, 0x91, 0x4e, 0x97, 0x9e, 0xa5, 0x0c, 0x4f, 0xa0, 0x53, 0x82, 0xb1, 0x07,
-	0xcd, 0xcf, 0xb4, 0xb4, 0x2d, 0xc8, 0x8e, 0x78, 0x08, 0xfb, 0xd7, 0x32, 0x58, 0x14, 0xfa, 0x73,
-	0xe3, 0xa9, 0xf3, 0x84, 0x89, 0x63, 0x68, 0xdb, 0x5a, 0xb2, 0xa0, 0x59, 0x20, 0x95, 0xb2, 0xc4,
-	0xdc, 0xc8, 0x1a, 0xf4, 0x29, 0x56, 0xda, 0x32, 0xcd, 0x59, 0x9c, 0x43, 0xff, 0x35, 0xe9, 0x4d,
-	0x51, 0xaa, 0x98, 0x2e, 0x9e, 0x80, 0xdd, 0x0f, 0x03, 0x73, 0x66, 0xb4, 0x0c, 0x6a, 0xb4, 0x78,
-	0xe5, 0x58, 0x71, 0x01, 0x83, 0xf2, 0xca, 0x98, 0x80, 0x7c, 0x9b, 0x76, 0x46, 0x5a, 0x0c, 0xcd,
-	0x29, 0x0d, 0xad, 0x0f, 0x2d, 0xa5, 0xa5, 0x5e, 0x28, 0x3b, 0x4a, 0x6b, 0x89, 0x21, 0xf0, 0xdd,
-	0xb4, 0x79, 0xb5, 0xd3, 0xdf, 0x0e, 0xdc, 0x28, 0x16, 0x14, 0xdf, 0xc1, 0x9d, 0x73, 0x9d, 0x92,
-	0x0c, 0x4b, 0xba, 0xf0, 0x7e, 0x4d, 0xe9, 0xf9, 0xe2, 0x0e, 0xeb, 0x94, 0x89, 0xc6, 0x23, 0x86,
-	0xef, 0xe1, 0xf6, 0xa9, 0xaf, 0xf4, 0x7f, 0xa4, 0xab, 0x0e, 0xfd, 0xef, 0x2d, 0x16, 0x0d, 0x94,
-	0xd0, 0xdb, 0x96, 0x84, 0x47, 0x15, 0x6a, 0x4d, 0x23, 0x87, 0x0f, 0xff, 0x11, 0xb5, 0xbe, 0xe2,
-	0x03, 0x74, 0xab, 0xef, 0x17, 0x45, 0x2d, 0x75, 0xfd, 0xea, 0xb7, 0xea, 0xaf, 0xf9, 0x00, 0x1a,
-	0xcf, 0x7b, 0xdf, 0x57, 0x23, 0xf6, 0x63, 0x35, 0x62, 0x3f, 0x57, 0x23, 0xf6, 0xf5, 0xd7, 0xa8,
-	0x71, 0xd9, 0x32, 0x7f, 0xcb, 0xf1, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xfe, 0xaf, 0x99,
-	0x6d, 0x04, 0x00, 0x00,
+var fileDescriptor_deployer_d1d4a173c01ba772 = []byte{
+	// 525 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xdd, 0x8a, 0xd3, 0x40,
+	0x14, 0x6e, 0x92, 0xb5, 0xdd, 0x3d, 0x91, 0x5a, 0x0f, 0xda, 0x0e, 0x51, 0x4b, 0x19, 0x15, 0x7a,
+	0x55, 0xb4, 0x5e, 0xe8, 0xba, 0x77, 0xe2, 0x0f, 0xc2, 0xa2, 0x92, 0xb2, 0x28, 0x78, 0x21, 0xb3,
+	0xc9, 0xb0, 0x06, 0xf3, 0x67, 0x66, 0xba, 0xd0, 0x37, 0xf1, 0x4d, 0x7c, 0x05, 0x2f, 0x7d, 0x04,
+	0xa9, 0xaf, 0xe0, 0x03, 0x48, 0x26, 0x99, 0xfc, 0x74, 0x0d, 0xb2, 0x77, 0xf9, 0xce, 0x9c, 0xf3,
+	0x9d, 0xf3, 0x1d, 0xbe, 0x1c, 0x18, 0xfa, 0x3c, 0x0d, 0x93, 0x0d, 0xcf, 0x16, 0x69, 0x96, 0xc8,
+	0x04, 0x6d, 0x8d, 0x3f, 0x9d, 0x3f, 0xa4, 0x13, 0xb8, 0x79, 0x92, 0xfa, 0x4c, 0xf2, 0xe7, 0x65,
+	0xd0, 0xe5, 0x5f, 0xd7, 0x5c, 0x48, 0x4a, 0x60, 0xbc, 0xfb, 0x20, 0xd2, 0x24, 0x16, 0x9c, 0xbe,
+	0x83, 0x51, 0x11, 0x8b, 0x78, 0x2c, 0x5f, 0x06, 0xa1, 0xe4, 0x19, 0x12, 0x18, 0x78, 0xe1, 0x5a,
+	0x48, 0x9e, 0x11, 0x63, 0x66, 0xcc, 0x0f, 0x5c, 0x0d, 0x91, 0xc2, 0x55, 0xdd, 0xef, 0x0d, 0x8b,
+	0x38, 0x31, 0xd5, 0x73, 0x2b, 0x46, 0xbf, 0x9b, 0x00, 0x35, 0x25, 0x0e, 0xc1, 0x0c, 0xfc, 0x92,
+	0xc7, 0x0c, 0x7c, 0xbc, 0x0d, 0x07, 0x31, 0x8b, 0xb8, 0x48, 0x99, 0xa7, 0xeb, 0xeb, 0x00, 0x22,
+	0xec, 0xe5, 0x80, 0x58, 0xea, 0x41, 0x7d, 0xe3, 0x11, 0x80, 0x5f, 0xf1, 0x91, 0xbd, 0x99, 0x31,
+	0xb7, 0x97, 0xb7, 0x16, 0x0d, 0xdd, 0x8b, 0xba, 0xdd, 0x2a, 0xe5, 0x9e, 0xdb, 0x48, 0xc7, 0x25,
+	0x0c, 0x82, 0xf8, 0x2c, 0xe3, 0x42, 0x90, 0xbe, 0xaa, 0x24, 0xad, 0xca, 0xd7, 0xc5, 0x9b, 0x2a,
+	0xd3, 0x89, 0x78, 0x04, 0xfd, 0x90, 0x9d, 0xf2, 0x50, 0x90, 0xc1, 0xcc, 0x9a, 0xdb, 0xcb, 0xbb,
+	0x1d, 0xcd, 0x16, 0xc7, 0x2a, 0xeb, 0x45, 0x2c, 0xb3, 0x8d, 0x5b, 0x96, 0x38, 0x87, 0x60, 0x37,
+	0xc2, 0x38, 0x02, 0xeb, 0x0b, 0xdf, 0x94, 0xfa, 0xf3, 0x4f, 0xbc, 0x01, 0x57, 0xce, 0x59, 0xb8,
+	0xd6, 0xe2, 0x0b, 0xf0, 0xd4, 0x7c, 0x62, 0xd0, 0x0f, 0x30, 0x6c, 0x2b, 0x41, 0x07, 0xf6, 0x33,
+	0x9e, 0x86, 0x81, 0xc7, 0x84, 0xa2, 0xb0, 0xdc, 0x0a, 0xe7, 0x3c, 0x41, 0xc4, 0xce, 0x2a, 0x1e,
+	0x05, 0xf2, 0x68, 0x9a, 0x64, 0x52, 0x10, 0x6b, 0x66, 0xcd, 0x2d, 0xb7, 0x00, 0xf4, 0x31, 0xd8,
+	0x0d, 0xa5, 0x79, 0x92, 0x17, 0x32, 0x21, 0xca, 0xb1, 0x0a, 0x90, 0xef, 0xfe, 0x73, 0x22, 0x64,
+	0xc9, 0xa7, 0xbe, 0xe9, 0x0a, 0xc6, 0xaf, 0xb8, 0xac, 0xa7, 0x12, 0xda, 0x38, 0x78, 0x08, 0x76,
+	0xbd, 0xe6, 0x9c, 0x29, 0xdf, 0xd4, 0xa4, 0x63, 0x53, 0x6e, 0x33, 0x97, 0x9e, 0xc0, 0xa4, 0xe9,
+	0x46, 0x95, 0x50, 0x18, 0xf5, 0x82, 0x5b, 0xb4, 0x1f, 0xcc, 0x86, 0x1f, 0xc6, 0xd0, 0x17, 0x92,
+	0xc9, 0xb5, 0x28, 0x5d, 0x52, 0x22, 0xea, 0x00, 0xb9, 0x48, 0x5b, 0x4c, 0xbb, 0xfc, 0x63, 0xc2,
+	0xbe, 0xf6, 0x3e, 0xbe, 0x85, 0xeb, 0x2b, 0x99, 0x71, 0x16, 0x35, 0x74, 0xe1, 0x9d, 0x8e, 0xd1,
+	0x8b, 0x7f, 0xc2, 0xe9, 0x52, 0x46, 0x7b, 0x0f, 0x0c, 0x7c, 0x0f, 0xd7, 0x8e, 0x03, 0x21, 0x2f,
+	0x41, 0xd7, 0xb6, 0xd4, 0xbf, 0x57, 0x4c, 0x7b, 0xc8, 0x60, 0xb4, 0x2b, 0x09, 0xef, 0xb5, 0x4a,
+	0x3b, 0x16, 0xe9, 0xdc, 0xff, 0x4f, 0x56, 0xd5, 0xe2, 0x23, 0x0c, 0xdb, 0xa7, 0x01, 0x69, 0x67,
+	0x69, 0x75, 0x50, 0x76, 0xe6, 0xef, 0xb8, 0x2d, 0xbd, 0x67, 0xa3, 0x1f, 0xdb, 0xa9, 0xf1, 0x73,
+	0x3b, 0x35, 0x7e, 0x6d, 0xa7, 0xc6, 0xb7, 0xdf, 0xd3, 0xde, 0x69, 0x5f, 0x9d, 0xad, 0x47, 0x7f,
+	0x03, 0x00, 0x00, 0xff, 0xff, 0x64, 0xca, 0x6a, 0x9d, 0xc8, 0x04, 0x00, 0x00,
 }

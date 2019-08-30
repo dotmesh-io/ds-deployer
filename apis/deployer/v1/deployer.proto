@@ -22,13 +22,20 @@ message Deployment {
   string id                  = 1; // deployment ID
   string namespace           = 2; // deployment namespace
   string name                = 3; // deployment name
-  string imageName           = 4; // model image
-  int64  containerPort       = 5; // on which port container starts HTTP server    
-  Ingress ingress            = 6; // ingress class
+  // string imageName           = 4; // model image
+  // int64  containerPort       = 5; // on which port container starts HTTP server    
+  DeploymentSpec deployment  = 4;
+  IngressSpec ingress            = 6; // ingress class
   map<string, string> labels = 7; // optional labels
 }
 
-message Ingress {
+message DeploymentSpec {
+  int64  replicas      = 1;
+  string image         = 2;
+  repeated int64 ports = 3;
+}
+
+message IngressSpec {
   string class = 1;
   string host  = 2;
 }
