@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -58,11 +59,15 @@ func (c *Controller) synchronizeDeployments() error {
 }
 
 func getDeploymentName(d *deployer_v1.Deployment) string {
-	return "ds-d-" + d.GetId()
+	return "ds-" + d.GetName() + shortUUID(d.GetId())
 }
 
 func getPodName(d *deployer_v1.Deployment) string {
-	return "ds-p-" + d.GetId()
+	return "ds-" + d.GetName() + shortUUID(d.GetId())
+}
+
+func shortUUID(u string) string {
+	return strings.Split(u, "-")[0]
 }
 
 func (c *Controller) createDeployment(modelDeployment *deployer_v1.Deployment) error {
@@ -71,6 +76,15 @@ func (c *Controller) createDeployment(modelDeployment *deployer_v1.Deployment) e
 }
 
 func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment) *appsv1.Deployment {
+
+	cp := []corev1.ContainerPort{}
+
+	for _, p := range modelDeployment.Deployment.GetPorts() {
+		cp = append(cp, corev1.ContainerPort{
+			ContainerPort: int32(p),
+		})
+	}
+
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -95,10 +109,14 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment) *appsv1.Dep
 					},
 				},
 				Spec: corev1.PodSpec{
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						// TODO: pass in secrets
+					},
 					Containers: []corev1.Container{
 						corev1.Container{
 							Name:  getPodName(modelDeployment),
-							Image: modelDeployment.GetImageName(),
+							Image: modelDeployment.Deployment.GetImage(),
+							Ports: cp,
 						},
 					},
 				},
