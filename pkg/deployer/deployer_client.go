@@ -36,6 +36,10 @@ type Opts struct {
 	Logger      *zap.SugaredLogger
 }
 
+// TODO:
+// 1. delete deployments from cache
+// 2. signal readiness when should operator start managing k8s resources
+// so we don't start deleting them on boot
 type DefaultClient struct {
 	opts *Opts
 
@@ -76,6 +80,37 @@ func New(opts *Opts) *DefaultClient {
 		opts:        opts,
 		dialOpts:    dialOpts,
 		objectCache: opts.ObjectCache,
+		logger:      opts.Logger,
+	}
+}
+
+func (c *DefaultClient) startPeriodicSync(ctx context.Context) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		deploymentsResp, err := c.client.ListDeployments(ctx, &deployer_v1.DeploymentFilter{})
+		if err != nil {
+			c.logger.Errorw("failed to retrieve deployments",
+				"error", err,
+			)
+			continue
+		}
+
+		for _, d := range deploymentsResp.Deployments {
+			// c.logger.Infow("configured deployment detected",
+			// 	"image_name", d.GetImageName(),
+			// 	"id", d.GetId(),
+			// 	"name", d.GetName(),
+			// 	"namespace", d.GetNamespace(),
+			// 	"ingress_host", d.GetIngress().GetHost(),
+			// 	"ingress_class", d.GetIngress().GetClass(),
+			// )
+			c.objectCache.Insert(d)
+		}
+
+		// TODO: check what's in the cache and remove anything that shouldn't be there anymore
+
 	}
 }
 
@@ -99,6 +134,8 @@ RECONNECT:
 		)
 		return err
 	}
+
+	go c.startPeriodicSync(ctx)
 
 	for {
 		select {
