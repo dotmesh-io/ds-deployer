@@ -71,11 +71,11 @@ func shortUUID(u string) string {
 }
 
 func (c *Controller) createDeployment(modelDeployment *deployer_v1.Deployment) error {
-	return c.client.Create(context.Background(), toKubernetesDeployment(modelDeployment))
+	return c.client.Create(context.Background(), toKubernetesDeployment(modelDeployment, c.controllerIdentifier))
 
 }
 
-func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment) *appsv1.Deployment {
+func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerIdentifier string) *appsv1.Deployment {
 
 	cp := []corev1.ContainerPort{}
 
@@ -93,7 +93,9 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment) *appsv1.Dep
 			Labels: map[string]string{
 				"owner": "ds-deployer",
 			},
-			Annotations: map[string]string{},
+			Annotations: map[string]string{
+				AnnControllerIdentifier: controllerIdentifier,
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: toInt32(1),
