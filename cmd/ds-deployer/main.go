@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -65,11 +67,14 @@ func main() {
 			os.Exit(1)
 		}
 
+		controllerIdentifier := getMD5Hash(*token)
+
 		kubeClient := newClient(*kubeconfig, *inCluster)
 
-		cache := deploymentController.NewKubernetesCache()
+		cache := deploymentController.NewKubernetesCache(controllerIdentifier)
 
 		controllerOptions := []deploymentController.Option{
+			deploymentController.WithIdentifier(controllerIdentifier),
 			deploymentController.WithClient(mgr.GetClient()),
 			deploymentController.WithCache(cache),
 			deploymentController.WithLogger(logger.With("module", "deployment-reconciler")),
@@ -213,4 +218,10 @@ func check(err error) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func getMD5Hash(text string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(text))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
