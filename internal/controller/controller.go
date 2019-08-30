@@ -98,6 +98,12 @@ func (c *Controller) register(ctx context.Context, ch chan event) {
 func (c *Controller) sync() error {
 
 	// check deployments
+	err := c.synchronizeDeployments()
+	if err != nil {
+		c.logger.Errorw("failed to synchronize deployments",
+			"error", err,
+		)
+	}
 
 	// check services
 
