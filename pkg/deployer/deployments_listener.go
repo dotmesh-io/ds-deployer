@@ -27,12 +27,24 @@ func (c *DefaultClient) getDeployments(ctx context.Context, filter *deployer_v1.
 			if err == io.EOF {
 				break
 			}
+			if err != nil {
+				// log.WithFields(log.Fields{
+				// 	"error":   err,
+				// 	"address": c.opts.Addr,
+				// }).Error("failed to get stream from server")
+				c.logger.Errorw("failed to establish deployments stream",
+					"error", err,
+					"addr", c.opts.Addr,
+				)
+				return err
+			}
 
 			c.logger.Infow("new deployment received",
 				"name", deployment.GetName(),
 				"namespace", deployment.GetNamespace(),
 				"id", deployment.GetId(),
 			)
+			c.objectCache.Insert(deployment)
 		}
 	}
 }
