@@ -21,6 +21,9 @@ type Controller struct {
 	client client.Client
 	logger *zap.SugaredLogger
 	cache  *KubernetesCache
+
+	// hash of the api key
+	controllerIdentifier string
 }
 
 func New(opts ...Option) (*Controller, error) {
