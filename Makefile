@@ -9,3 +9,6 @@ image:
 	# dotmesh/dotscience-deployer:latest
 	docker build -t quay.io/dotmesh/dotscience-deployer:alpha -f Dockerfile .
 	docker push quay.io/dotmesh/dotscience-deployer:alpha
+
+run: install
+	ds-deployer run --no-incluster --no-require-tls

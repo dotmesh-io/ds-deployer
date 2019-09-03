@@ -61,7 +61,12 @@ func (c *Controller) synchronizeDeployments() error {
 	// going through existing deployments to see which ones should
 	// be removed
 	for meta, deployment := range c.cache.deployments {
-		_, ok := c.cache.modelDeployments[meta]
+
+		if deployment.GetAnnotations() == nil {
+			continue
+		}
+
+		_, ok := c.cache.modelDeployments[Meta{namespace: meta.namespace, name: deployment.GetAnnotations()["name"]}]
 		if !ok {
 			// not found in model deployments, should delete
 			c.logger.Infof("deployment %s/%s not found in model deployments, deleting", deployment.GetNamespace(), deployment.GetName())
@@ -74,7 +79,7 @@ func (c *Controller) synchronizeDeployments() error {
 }
 
 func getDeploymentName(d *deployer_v1.Deployment) string {
-	return "ds-" + d.GetName() + shortUUID(d.GetId())
+	return "ds-" + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
 func getPodName(d *deployer_v1.Deployment) string {
@@ -110,6 +115,9 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 			},
 			Annotations: map[string]string{
 				AnnControllerIdentifier: controllerIdentifier,
+				// based on model deployment name we will need this later
+				// to ensure we delete what's not needed anymore
+				"name": modelDeployment.GetName(),
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
