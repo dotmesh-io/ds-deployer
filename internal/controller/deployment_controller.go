@@ -12,17 +12,6 @@ import (
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
 )
 
-func toKubernetesDeployments(deployments map[Meta]*deployer_v1.Deployment) map[Meta]*appsv1.Deployment {
-
-	computed := make(map[Meta]*appsv1.Deployment)
-
-	// for _, d := range deployments {
-
-	// }
-
-	return computed
-}
-
 func (c *Controller) synchronizeDeployments() error {
 
 	var wg sync.WaitGroup
@@ -66,9 +55,17 @@ func (c *Controller) synchronizeDeployments() error {
 				}
 				wg.Done()
 			}(updatedDeployment)
-
 		}
+	}
 
+	// going through existing deployments to see which ones should
+	// be removed
+	for meta, deployment := range c.cache.deployments {
+		_, ok := c.cache.modelDeployments[meta]
+		if !ok {
+			// not found in model deployments, should delete
+			c.logger.Infof("deployment %s/%s not found in model deployments, deleting", deployment.GetNamespace(), deployment.GetName())
+		}
 	}
 
 	wg.Wait()
