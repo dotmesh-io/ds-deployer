@@ -35,6 +35,7 @@ func (c *Controller) synchronizeDeployments() error {
 		}]
 		if !ok {
 			wg.Add(1)
+			// creating new deployment
 			go func(modelDeployment *deployer_v1.Deployment) {
 				err := c.createDeployment(modelDeployment)
 				if err != nil {
@@ -43,6 +44,7 @@ func (c *Controller) synchronizeDeployments() error {
 						"deployment_id", modelDeployment.GetId(),
 					)
 				}
+				wg.Done()
 			}(modelDeployment)
 			// should get created if it doesn't exist
 			continue
@@ -50,7 +52,23 @@ func (c *Controller) synchronizeDeployments() error {
 
 		c.logger.Infof("deployment %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
-		existing.GetLabels()
+		if !deploymentsEqual(toKubernetesDeployment(modelDeployment, c.controllerIdentifier), existing) {
+			updatedDeployment := updateDeployment(existing, modelDeployment)
+
+			wg.Add(1)
+			go func(updatedDeployment *appsv1.Deployment) {
+				err := c.client.Update(context.Background(), updatedDeployment)
+				if err != nil {
+					c.logger.Errorw("failed to update deployment",
+						"error", err,
+						"deployment_id", modelDeployment.GetId(),
+					)
+				}
+				wg.Done()
+			}(updatedDeployment)
+
+		}
+
 	}
 
 	wg.Wait()
@@ -98,7 +116,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: toInt32(1),
+			Replicas: toInt32(int(modelDeployment.Deployment.GetReplicas())),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"deployment": modelDeployment.GetId(),
@@ -127,6 +145,102 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 	}
 
 	return deployment
+}
+
+// compares replicas, image, port, image pull secrets
+func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
+	if desired.Spec.Replicas != existing.Spec.Replicas {
+		return false
+	}
+
+	if desired.Spec.Template.GetLabels()["deployment"] != existing.Spec.Template.GetLabels()["deployment"] {
+		return false
+	}
+
+	if len(desired.Spec.Template.Spec.ImagePullSecrets) != len(existing.Spec.Template.Spec.ImagePullSecrets) {
+		return false
+	}
+
+	for i := range desired.Spec.Template.Spec.ImagePullSecrets {
+		if existing.Spec.Template.Spec.ImagePullSecrets[i] != desired.Spec.Template.Spec.ImagePullSecrets[i] {
+			return false
+		}
+	}
+
+	// comparing images
+	if len(desired.Spec.Template.Spec.Containers) != len(existing.Spec.Template.Spec.Containers) {
+		return false
+	}
+
+	existingContainers := make(map[string]corev1.Container)
+
+	for _, container := range existing.Spec.Template.Spec.Containers {
+		existingContainers[container.Name] = container
+	}
+
+	for _, container := range desired.Spec.Template.Spec.Containers {
+		existingContainer, ok := existingContainers[container.Name]
+		if !ok {
+			return false
+		}
+		if existingContainer.Image != container.Name {
+			return false
+		}
+		if len(existingContainer.Ports) != len(container.Ports) {
+			return false
+		}
+		for i := range container.Ports {
+			if container.Ports[i] != existingContainer.Ports[i] {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func updateDeployment(existing *appsv1.Deployment, md *deployer_v1.Deployment) *appsv1.Deployment {
+	updated := existing.DeepCopy()
+
+	cp := []corev1.ContainerPort{}
+	for _, p := range md.Deployment.GetPorts() {
+		cp = append(cp, corev1.ContainerPort{
+			ContainerPort: int32(p),
+		})
+	}
+
+	// ensuring deployment ID
+	labels := updated.Spec.Template.GetLabels()
+	labels["deployment"] = md.GetId()
+	updated.SetLabels(labels)
+
+	// updating spec
+	if updated.Spec.Selector.MatchLabels == nil {
+		updated.Spec.Selector.MatchLabels = map[string]string{
+			"deployment": md.GetId(),
+		}
+	} else {
+		updated.Spec.Selector.MatchLabels["deployment"] = md.GetId()
+	}
+
+	if updated.Spec.Template.Labels == nil {
+		updated.Spec.Template.Labels = map[string]string{
+			"deployment": md.GetId(),
+		}
+	} else {
+		updated.Spec.Template.Labels["deployment"] = md.GetId()
+	}
+
+	updated.Spec.Replicas = toInt32(int(md.Deployment.Replicas))
+	modelPodName := getPodName(md)
+	for idx, c := range updated.Spec.Template.Spec.Containers {
+		if c.Name == modelPodName {
+			updated.Spec.Template.Spec.Containers[idx].Image = md.Deployment.GetImage()
+			updated.Spec.Template.Spec.Containers[idx].Ports = cp
+		}
+	}
+
+	return updated
 }
 
 func toInt32(v int) *int32 {
