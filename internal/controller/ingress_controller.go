@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"sync"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -10,6 +11,78 @@ import (
 )
 
 func (c *Controller) synchronizeIngresses() error {
+
+	var wg sync.WaitGroup
+
+	for meta, modelDeployment := range c.cache.modelDeployments {
+		// checking if we have this deployment
+		existing, ok := c.cache.ingresses[Meta{
+			namespace: meta.namespace,
+			name:      getDeploymentName(modelDeployment),
+		}]
+		if !ok {
+			wg.Add(1)
+			// creating new deployment
+			go func(modelDeployment *deployer_v1.Deployment) {
+				err := c.createIngress(modelDeployment)
+				if err != nil {
+					c.logger.Errorw("failed to create ingress",
+						"error", err,
+						"deployment_id", modelDeployment.GetId(),
+					)
+				}
+				wg.Done()
+			}(modelDeployment)
+			// should get created if it doesn't exist
+			continue
+		}
+
+		c.logger.Infof("ingress %s/%s found, checking for updates", existing.Namespace, existing.Name)
+
+		if !ingressesEqual(toKubernetesIngress(modelDeployment, c.controllerIdentifier), existing) {
+			updatedIngress := updateIngress(existing, modelDeployment)
+
+			wg.Add(1)
+			go func(updatedIngress *v1beta1.Ingress) {
+				err := c.client.Update(context.Background(), updatedIngress)
+				if err != nil {
+					c.logger.Errorw("failed to update service",
+						"error", err,
+						"service_namespace", meta.namespace,
+						"service_name", updatedIngress.GetName(),
+						"deployment_id", modelDeployment.GetId(),
+					)
+				}
+				wg.Done()
+			}(updatedIngress)
+		}
+	}
+
+	// going through existing ingresses to see which ones should
+	// be removed
+	for meta, ingress := range c.cache.ingresses {
+
+		if ingress.GetAnnotations() == nil {
+			continue
+		}
+
+		_, ok := c.cache.modelDeployments[Meta{namespace: meta.namespace, name: ingress.GetAnnotations()["name"]}]
+		if !ok {
+			// not found in model deployments, should delete
+			c.logger.Infof("ingress %s/%s not found in model deployments, deleting", ingress.GetNamespace(), ingress.GetName())
+			err := c.client.Delete(context.Background(), ingress)
+			if err != nil {
+				c.logger.Errorw("failed to delete ingress",
+					"error", err,
+					"name", ingress.GetName(),
+					"namespace", ingress.GetNamespace(),
+				)
+			}
+		}
+	}
+
+	wg.Wait()
+
 	return nil
 }
 
@@ -79,7 +152,7 @@ func ingressesEqual(desired, existing *v1beta1.Ingress) bool {
 	return true
 }
 
-func updateIngress(existing v1beta1.Ingress, md *deployer_v1.Deployment) *v1beta1.Ingress {
+func updateIngress(existing *v1beta1.Ingress, md *deployer_v1.Deployment) *v1beta1.Ingress {
 	updated := existing.DeepCopy()
 
 	updated.Spec = getIngressSpec(md)
