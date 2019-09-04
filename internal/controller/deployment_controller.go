@@ -70,6 +70,14 @@ func (c *Controller) synchronizeDeployments() error {
 		if !ok {
 			// not found in model deployments, should delete
 			c.logger.Infof("deployment %s/%s not found in model deployments, deleting", deployment.GetNamespace(), deployment.GetName())
+			err := c.client.Delete(context.Background(), deployment)
+			if err != nil {
+				c.logger.Errorw("failed to delete deployment",
+					"error", err,
+					"name", deployment.GetName(),
+					"namespace", deployment.GetNamespace(),
+				)
+			}
 		}
 	}
 
@@ -92,7 +100,6 @@ func shortUUID(u string) string {
 
 func (c *Controller) createDeployment(modelDeployment *deployer_v1.Deployment) error {
 	return c.client.Create(context.Background(), toKubernetesDeployment(modelDeployment, c.controllerIdentifier))
-
 }
 
 func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerIdentifier string) *appsv1.Deployment {
