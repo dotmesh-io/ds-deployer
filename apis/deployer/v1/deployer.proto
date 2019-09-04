@@ -31,11 +31,15 @@ message Deployment {
   map<string, string> labels = 9; // optional labels
 }
 
-message ServiceSpec {
+message ServicePort {
   string name       = 1;
   string protocol   = 2;
   int32  port       = 3;
   int32  targetPort = 4;
+}
+
+message ServiceSpec {
+  repeated ServicePort ports = 1;
 }
 
 message DeploymentSpec {
