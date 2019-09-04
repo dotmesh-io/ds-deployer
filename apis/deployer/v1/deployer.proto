@@ -40,6 +40,8 @@ message ServicePort {
 
 message ServiceSpec {
   repeated ServicePort ports = 1;
+  string               type  = 2; // NodePort/LoadBalancer and so on
+  string      loadBalancerIP = 3; // by default empty, will be used for future prod deployments
 }
 
 message DeploymentSpec {
