@@ -1,0 +1,41 @@
+---
+kind: pipeline
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+workspace:
+  base: /go
+  path: src/github.com/dotmesh-io/ds-deployer
+
+steps:
+- name: test
+  pull: default
+  image: golang
+  commands:
+  - make test
+
+- name: build
+  pull: default
+  image: golang
+  commands:
+  - make install
+
+- name: publish
+  pull: default
+  image: plugins/docker
+  settings:
+    auto_tag: true
+    registry: quay.io
+    repo: quay.io/dotmesh/dotscience-deployer
+    password:
+      from_secret: docker_password
+    username:
+      from_secret: docker_username
+  when:
+    event:
+    - push
+    - tag
+
