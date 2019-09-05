@@ -109,8 +109,20 @@ func (c *Controller) sync() error {
 	}
 
 	// check services
+	err = c.synchronizeServices()
+	if err != nil {
+		c.logger.Errorw("failed to synchronize services",
+			"error", err,
+		)
+	}
 
 	// check ingresses
+	err = c.synchronizeIngresses()
+	if err != nil {
+		c.logger.Errorw("failed to synchronize ingresses",
+			"error", err,
+		)
+	}
 
 	return nil
 }
