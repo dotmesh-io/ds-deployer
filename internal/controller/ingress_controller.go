@@ -10,6 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+const (
+	kubernetesIngressClassAnnotation = "kubernetes.io/ingress.class"
+)
+
 func (c *Controller) synchronizeIngresses() error {
 
 	var wg sync.WaitGroup
@@ -128,6 +132,14 @@ func ingressesEqual(desired, existing *v1beta1.Ingress) bool {
 		return false
 	}
 
+	if desired.GetAnnotations() == nil || existing.GetAnnotations() == nil {
+		return false
+	}
+
+	if desired.GetAnnotations()[kubernetesIngressClassAnnotation] != existing.GetAnnotations()[kubernetesIngressClassAnnotation] {
+		return false
+	}
+
 	for i := range desired.Spec.Rules {
 		if desired.Spec.Rules[i].Host != existing.Spec.Rules[i].Host {
 			return false
@@ -154,7 +166,7 @@ func ingressesEqual(desired, existing *v1beta1.Ingress) bool {
 
 func updateIngress(existing *v1beta1.Ingress, md *deployer_v1.Deployment) *v1beta1.Ingress {
 	updated := existing.DeepCopy()
-	updated.Annotations["kubernetes.io/ingress.class"] = md.Ingress.GetClass()
+	updated.Annotations[kubernetesIngressClassAnnotation] = md.Ingress.GetClass()
 	updated.Spec = getIngressSpec(md)
 
 	return updated
@@ -175,7 +187,7 @@ func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string
 				// based on model deployment name we will need this later
 				// to ensure we delete what's not needed anymore
 				"name": md.GetName(),
-				"kubernetes.io/ingress.class": md.Ingress.GetClass(),
+				kubernetesIngressClassAnnotation: md.Ingress.GetClass(),
 			},
 		},
 		Spec: getIngressSpec(md),
