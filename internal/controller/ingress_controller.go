@@ -154,7 +154,7 @@ func ingressesEqual(desired, existing *v1beta1.Ingress) bool {
 
 func updateIngress(existing *v1beta1.Ingress, md *deployer_v1.Deployment) *v1beta1.Ingress {
 	updated := existing.DeepCopy()
-
+	updated.Annotations["kubernetes.io/ingress.class"] = md.Ingress.GetClass()
 	updated.Spec = getIngressSpec(md)
 
 	return updated
@@ -175,6 +175,7 @@ func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string
 				// based on model deployment name we will need this later
 				// to ensure we delete what's not needed anymore
 				"name": md.GetName(),
+				"kubernetes.io/ingress.class": md.Ingress.GetClass(),
 			},
 		},
 		Spec: getIngressSpec(md),
