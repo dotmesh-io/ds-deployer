@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/api/extensions/v1beta1"
@@ -30,10 +31,12 @@ type KubernetesCache struct {
 
 	// hash of the api key
 	controllerIdentifier string
+
+	logger *zap.SugaredLogger
 }
 
-func NewKubernetesCache(controllerIdentifier string) *KubernetesCache {
-	return &KubernetesCache{controllerIdentifier: controllerIdentifier}
+func NewKubernetesCache(controllerIdentifier string, logger *zap.SugaredLogger) *KubernetesCache {
+	return &KubernetesCache{controllerIdentifier: controllerIdentifier, logger: logger}
 }
 
 // Meta holds the name and namespace of a Kubernetes object.
@@ -65,8 +68,10 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 	case *corev1.Service:
 
 		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+			kc.logger.Debugf("wrong deployer ID %s/%s", obj.GetNamespace(), obj.GetName())
 			return false
 		}
+		kc.logger.Infof("inserting service %s/%s", obj.GetNamespace(), obj.GetName())
 
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.services == nil {
@@ -76,15 +81,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		// return kc.serviceTriggersRebuild(obj)
 		return true
 	case *v1beta1.Ingress:
-
 		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+			kc.logger.Debugf("wrong deployer ID %s/%s", obj.GetNamespace(), obj.GetName())
 			return false
 		}
-
-		class := getIngressClassAnnotation(obj.Annotations)
-		if class != "" && class != kc.ingressClass() {
-			return false
-		}
+		kc.logger.Infof("inserting ingress %s/%s", obj.GetNamespace(), obj.GetName())
 
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.ingresses == nil {
@@ -93,10 +94,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		kc.ingresses[m] = obj
 		return true
 	case *appsv1.Deployment:
-
 		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+			kc.logger.Debugf("wrong deployer ID %s/%s", obj.GetNamespace(), obj.GetName())
 			return false
 		}
+		kc.logger.Infof("inserting deployment %s/%s", obj.GetNamespace(), obj.GetName())
 
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.deployments == nil {
@@ -120,6 +122,7 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 // Remove removes obj from the KubernetesCache.
 // Remove returns a boolean indiciating if the cache changed after the remove operation.
 func (kc *KubernetesCache) Remove(obj interface{}) bool {
+	defer kc.Notify()
 	switch obj := obj.(type) {
 	default:
 		return kc.remove(obj)
@@ -165,36 +168,4 @@ func (kc *KubernetesCache) ModelDeployments() []*deployer_v1.Deployment {
 	}
 
 	return deployments
-}
-
-// ingressClass returns the IngressClass
-// or DEFAULT_INGRESS_CLASS if not configured.
-func (kc *KubernetesCache) ingressClass() string {
-	return stringOrDefault(kc.IngressClass, DEFAULT_INGRESS_CLASS)
-}
-
-func stringOrDefault(s, def string) string {
-	if s == "" {
-		return def
-	}
-	return s
-}
-
-// getIngressClassAnnotation checks for the acceptable ingress class annotations
-// 1. ds-deployer.dotscience.com/ingress.class
-// 2. kubernetes.io/ingress.class
-//
-// it returns the first matching ingress annotation (in the above order) with test
-func getIngressClassAnnotation(annotations map[string]string) string {
-	class, ok := annotations["ds-deployer.dotscience.com/ingress.class"]
-	if ok {
-		return class
-	}
-
-	class, ok = annotations["kubernetes.io/ingress.class"]
-	if ok {
-		return class
-	}
-
-	return ""
 }
