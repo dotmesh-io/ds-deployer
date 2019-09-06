@@ -39,7 +39,7 @@ func (c *Controller) synchronizeDeployments() error {
 			continue
 		}
 
-		c.logger.Infof("deployment %s/%s found, checking for updates", existing.Namespace, existing.Name)
+		c.logger.Debugf("deployment %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !deploymentsEqual(toKubernetesDeployment(modelDeployment, c.controllerIdentifier), existing) {
 			updatedDeployment := updateDeployment(existing, modelDeployment)
@@ -91,7 +91,7 @@ func getDeploymentName(d *deployer_v1.Deployment) string {
 }
 
 func getPodName(d *deployer_v1.Deployment) string {
-	return "ds-" + d.GetName() + shortUUID(d.GetId())
+	return "ds-" + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
 func shortUUID(u string) string {
