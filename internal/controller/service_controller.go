@@ -36,7 +36,7 @@ func (c *Controller) synchronizeServices() error {
 			continue
 		}
 
-		c.logger.Infof("service %s/%s found, checking for updates", existing.Namespace, existing.Name)
+		c.logger.Debugf("service %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !servicesEqual(toKubernetesService(modelDeployment, c.controllerIdentifier), existing) {
 			updatedService := updateService(existing, modelDeployment)

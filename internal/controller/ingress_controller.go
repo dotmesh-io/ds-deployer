@@ -41,7 +41,7 @@ func (c *Controller) synchronizeIngresses() error {
 			continue
 		}
 
-		c.logger.Infof("ingress %s/%s found, checking for updates", existing.Namespace, existing.Name)
+		c.logger.Debugf("ingress %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !ingressesEqual(toKubernetesIngress(modelDeployment, c.controllerIdentifier), existing) {
 			updatedIngress := updateIngress(existing, modelDeployment)
