@@ -33,16 +33,18 @@ spec:
         command: ["reingress"]
         args: ["server", "--incluster"]           
         env:
-          - name: KEY
+          - name: RELAY_KEY
             valueFrom:
               secretKeyRef:
                 name: webrelay-credentials
                 key: key
-          - name: SECRET
+          - name: RELAY_SECRET
             valueFrom:
               secretKeyRef:
                 name: webrelay-credentials
                 key: secret
+          - name: RELAY_NAME
+            value: minikube
       dnsPolicy: ClusterFirst
       serviceAccountName: webrelay
       terminationGracePeriodSeconds: 10     
