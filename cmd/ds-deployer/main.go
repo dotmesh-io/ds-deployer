@@ -54,6 +54,11 @@ func main() {
 		app.Usage(args)
 		os.Exit(2)
 	case run.FullCommand():
+
+		if *token == "" {
+			logger.Errorf("token not supplied, use --token <YOUR TOKEN> or environment variable '%s' to specify the token", EnvAuthToken)
+			os.Exit(1)
+		}
 		// Setup a Manager
 		logger.Info("setting up manager")
 		mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
@@ -71,7 +76,7 @@ func main() {
 
 		kubeClient := newClient(*kubeconfig, *inCluster)
 
-		cache := deploymentController.NewKubernetesCache(controllerIdentifier)
+		cache := deploymentController.NewKubernetesCache(controllerIdentifier, logger.With("module", "cache"))
 
 		controllerOptions := []deploymentController.Option{
 			deploymentController.WithIdentifier(controllerIdentifier),
