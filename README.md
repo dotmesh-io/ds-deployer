@@ -38,3 +38,14 @@ Nice to have:
   ```
   kubectl create --namespace webrelay-ingress secret generic webrelay-credentials --from-literal=key=xxx --from-literal=secret=xxx
   ```
+
+## Development
+
+Project mostly just needs go, to generate protobuf files:
+
+* https://github.com/golang/protobuf#installation
+* `go get github.com/gogo/protobuf/protoc-gen-gofast`
+
+Then:
+
+  * `make proto`
