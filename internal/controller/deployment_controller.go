@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +25,11 @@ func (c *Controller) synchronizeDeployments() error {
 			name:      getDeploymentName(modelDeployment),
 		}]
 		if !ok {
+			// updating status cache
+			if c.statusCache.Get(modelDeployment.Id).Deployment == status.StatusConfiguring {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleDeployment, status.StatusConfiguring)
+			}
+
 			wg.Add(1)
 			// creating new deployment
 			go func(modelDeployment *deployer_v1.Deployment) {
@@ -42,6 +49,10 @@ func (c *Controller) synchronizeDeployments() error {
 		c.logger.Debugf("deployment %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !deploymentsEqual(toKubernetesDeployment(modelDeployment, c.controllerIdentifier), existing) {
+			// updating status cache
+			if c.statusCache.Get(modelDeployment.Id).Deployment == status.StatusConfiguring {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleDeployment, status.StatusConfiguring)
+			}
 			updatedDeployment := updateDeployment(existing, modelDeployment)
 
 			wg.Add(1)
@@ -55,6 +66,11 @@ func (c *Controller) synchronizeDeployments() error {
 				}
 				wg.Done()
 			}(updatedDeployment)
+		} else {
+			// deployment is in sync
+			if c.statusCache.Get(modelDeployment.Id).Deployment == status.StatusReady {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleDeployment, status.StatusReady)
+			}
 		}
 	}
 
