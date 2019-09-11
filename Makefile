@@ -14,7 +14,7 @@ install-release:
 install:
 	cd cmd/ds-deployer && go install
 
-proto:
+proto:	
 	cd apis/deployer/v1 && protoc --gofast_out=plugins=grpc:. deployer.proto
 
 image:

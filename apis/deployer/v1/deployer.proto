@@ -64,9 +64,10 @@ message GetDeploymentsResponse {
 }
 
 message UpdateDeploymentRequest {
-  string id     = 1;
-  string name   = 2;
-  string status = 3;
+  string id                = 1;
+  string name              = 2;
+  string status            = 3;
+  int64  availableReplicas = 4;
 }
 
 message UpdateDeploymentResponse {
