@@ -1,4 +1,4 @@
-package controller
+package status
 
 import (
 	"sync"
@@ -12,7 +12,12 @@ type StatusCache struct {
 	cond.Cond
 }
 
-func NewStatusCache() *StatusCache {
+type Cache interface {
+	Set(deploymentID string, module Module, status Status)
+	Get(deploymentID string) DeploymentStatus
+}
+
+func New() *StatusCache {
 	return &StatusCache{
 		deployments: make(map[string]DeploymentStatus),
 		mu:          &sync.RWMutex{},
@@ -43,6 +48,7 @@ const (
 )
 
 func (c *StatusCache) Set(deploymentID string, module Module, status Status) {
+	defer c.Notify()
 	c.mu.Lock()
 	deploymentStatus, ok := c.deployments[deploymentID]
 	if !ok {
