@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
 	"k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -25,6 +26,10 @@ func (c *Controller) synchronizeIngresses() error {
 			name:      getDeploymentName(modelDeployment),
 		}]
 		if !ok {
+			if c.statusCache.Get(modelDeployment.Id).Ingress == status.StatusConfiguring {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusConfiguring)
+			}
+
 			wg.Add(1)
 			// creating new deployment
 			go func(modelDeployment *deployer_v1.Deployment) {
@@ -44,6 +49,10 @@ func (c *Controller) synchronizeIngresses() error {
 		c.logger.Debugf("ingress %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !ingressesEqual(toKubernetesIngress(modelDeployment, c.controllerIdentifier), existing) {
+			if c.statusCache.Get(modelDeployment.Id).Ingress == status.StatusConfiguring {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusConfiguring)
+			}
+
 			updatedIngress := updateIngress(existing, modelDeployment)
 
 			wg.Add(1)
@@ -59,6 +68,10 @@ func (c *Controller) synchronizeIngresses() error {
 				}
 				wg.Done()
 			}(updatedIngress)
+		} else {
+			if c.statusCache.Get(modelDeployment.Id).Ingress == status.StatusReady {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusReady)
+			}
 		}
 	}
 
