@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
+	"github.com/dotmesh-io/ds-deployer/internal/controller"
 	"github.com/dotmesh-io/ds-deployer/pkg/stopper"
 	"github.com/dotmesh-io/ds-deployer/pkg/timeutil"
 	"github.com/dotmesh-io/ds-deployer/pkg/version"
@@ -26,6 +27,11 @@ const (
 
 type ObjectCache interface {
 	Insert(obj interface{}) bool
+}
+
+type StatusCache interface {
+	Get(deploymentID string) controller.DeploymentStatus
+	Register(ch chan int, last int)
 }
 
 type Opts struct {
