@@ -13,11 +13,11 @@ Deployer configures model-proxy as a sidecar, creates a service and an ingress. 
 
 Goals:
 
-- [ ] declarative deployment management
+- [x] declarative deployment management
 - [ ] after reboot wait till new deployment info is retrieved
-- [ ] stateless - all state should be retrieved from the gateway on boot and kept in sync
-- [ ] should be able to work in groups - each deployer should only care about the resources that it created
-- [ ] ability to update image without recreating deployment 
+- [x] stateless - all state should be retrieved from the gateway on boot and kept in sync
+- [x] should be able to work in groups - each deployer should only care about the resources that it created
+- [x] ability to update image without recreating deployment 
 
 
 Nice to have:
