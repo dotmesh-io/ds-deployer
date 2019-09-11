@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -20,6 +21,10 @@ func (c *Controller) synchronizeServices() error {
 			name:      getDeploymentName(modelDeployment),
 		}]
 		if !ok {
+			if c.statusCache.Get(modelDeployment.Id).Service == status.StatusConfiguring {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleService, status.StatusConfiguring)
+			}
+
 			wg.Add(1)
 			// creating new deployment
 			go func(modelDeployment *deployer_v1.Deployment) {
@@ -39,6 +44,10 @@ func (c *Controller) synchronizeServices() error {
 		c.logger.Debugf("service %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !servicesEqual(toKubernetesService(modelDeployment, c.controllerIdentifier), existing) {
+			if c.statusCache.Get(modelDeployment.Id).Service == status.StatusConfiguring {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleService, status.StatusConfiguring)
+			}
+
 			updatedService := updateService(existing, modelDeployment)
 
 			wg.Add(1)
@@ -54,6 +63,10 @@ func (c *Controller) synchronizeServices() error {
 				}
 				wg.Done()
 			}(updatedService)
+		} else {
+			if c.statusCache.Get(modelDeployment.Id).Service == status.StatusReady {
+				c.statusCache.Set(modelDeployment.Id, status.ModuleService, status.StatusReady)
+			}
 		}
 	}
 
