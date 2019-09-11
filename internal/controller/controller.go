@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/dotmesh-io/ds-deployer/pkg/logger"
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
 )
 
 // Controller reconciles Deployments
@@ -21,6 +22,8 @@ type Controller struct {
 	client client.Client
 	logger *zap.SugaredLogger
 	cache  *KubernetesCache
+	// status cache
+	statusCache status.Cache
 
 	// hash of the api key
 	controllerIdentifier string
