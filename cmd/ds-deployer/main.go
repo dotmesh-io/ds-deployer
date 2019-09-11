@@ -26,6 +26,7 @@ import (
 	deploymentController "github.com/dotmesh-io/ds-deployer/internal/controller"
 	"github.com/dotmesh-io/ds-deployer/pkg/deployer"
 	"github.com/dotmesh-io/ds-deployer/pkg/logger"
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
 	"github.com/dotmesh-io/ds-deployer/pkg/workgroup"
 )
 
@@ -76,6 +77,7 @@ func main() {
 
 		kubeClient := newClient(*kubeconfig, *inCluster)
 
+		statusCache := status.New()
 		cache := deploymentController.NewKubernetesCache(controllerIdentifier, logger.With("module", "cache"))
 
 		controllerOptions := []deploymentController.Option{
@@ -83,6 +85,7 @@ func main() {
 			deploymentController.WithClient(mgr.GetClient()),
 			deploymentController.WithCache(cache),
 			deploymentController.WithLogger(logger.With("module", "deployment-reconciler")),
+			deploymentController.WithStatusCache(statusCache),
 		}
 
 		deploymentReconciler, err := deploymentController.New(controllerOptions...)
@@ -145,6 +148,7 @@ func main() {
 			Token:       *token,
 			RequireTLS:  *requireTLS,
 			ObjectCache: cache,
+			StatusCache: statusCache,
 			Logger:      logger,
 		})
 
