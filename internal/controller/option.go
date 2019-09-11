@@ -1,10 +1,10 @@
 package controller
 
 import (
-	// "github.com/go-logr/logr"
 	"go.uber.org/zap"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
 )
 
 // Option configures a controller option.
@@ -25,6 +25,12 @@ func WithLogger(logger *zap.SugaredLogger) Option {
 func WithCache(cache *KubernetesCache) Option {
 	return func(c *Controller) {
 		c.cache = cache
+	}
+}
+
+func WithStatusCache(cache status.Cache) Option {
+	return func(c *Controller) {
+		c.statusCache = cache
 	}
 }
 
