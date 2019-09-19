@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
-	"github.com/dotmesh-io/ds-deployer/internal/controller"
+	"github.com/dotmesh-io/ds-deployer/pkg/status"
 	"github.com/dotmesh-io/ds-deployer/pkg/stopper"
 	"github.com/dotmesh-io/ds-deployer/pkg/timeutil"
 	"github.com/dotmesh-io/ds-deployer/pkg/version"
@@ -27,10 +27,12 @@ const (
 
 type ObjectCache interface {
 	Insert(obj interface{}) bool
+	ModelDeployments() []*deployer_v1.Deployment
+	Remove(obj interface{}) bool
 }
 
 type StatusCache interface {
-	Get(deploymentID string) controller.DeploymentStatus
+	Get(deploymentID string) status.DeploymentStatus
 	Register(ch chan int, last int)
 }
 
@@ -39,6 +41,7 @@ type Opts struct {
 	Token       string
 	RequireTLS  bool
 	ObjectCache ObjectCache
+	StatusCache StatusCache
 	Logger      *zap.SugaredLogger
 }
 
@@ -104,8 +107,6 @@ func (c *DefaultClient) startPeriodicSync(ctx context.Context) {
 			continue
 		}
 
-		// TODO: check what's in the cache and remove anything that shouldn't be there anymore
-
 	}
 }
 
@@ -120,7 +121,33 @@ func (c *DefaultClient) syncDeployments(ctx context.Context) error {
 		c.objectCache.Insert(d)
 	}
 
+	c.reapDeployments(deploymentsResp.Deployments)
+
 	return nil
+}
+
+func (c *DefaultClient) reapDeployments(desired []*deployer_v1.Deployment) {
+
+	delete := toDelete(desired, c.objectCache.ModelDeployments())
+
+	for _, d := range delete {
+		c.objectCache.Remove(d)
+	}
+}
+
+func toDelete(desired, cached []*deployer_v1.Deployment) []*deployer_v1.Deployment {
+	dm := make(map[string]bool)
+	for _, d := range desired {
+		dm[d.GetId()] = true
+	}
+
+	delete := cached[:0]
+	for _, x := range cached {
+		if !dm[x.GetId()] {
+			delete = append(delete, x)
+		}
+	}
+	return delete
 }
 
 func (c *DefaultClient) StartDeployer(ctx context.Context) error {
