@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 
@@ -25,6 +26,7 @@ import (
 
 	deploymentController "github.com/dotmesh-io/ds-deployer/internal/controller"
 	"github.com/dotmesh-io/ds-deployer/pkg/deployer"
+	"github.com/dotmesh-io/ds-deployer/pkg/health"
 	"github.com/dotmesh-io/ds-deployer/pkg/logger"
 	"github.com/dotmesh-io/ds-deployer/pkg/status"
 	"github.com/dotmesh-io/ds-deployer/pkg/workgroup"
@@ -32,6 +34,7 @@ import (
 
 const EnvGatewayAddress = "GATEWAY_ADDRESS"
 const EnvAuthToken = "TOKEN"
+const EnvHealthPort = "HEALTH_PORT"
 
 const gatewayServerAddress = "cloud.dotscience.com:8800"
 const controllerName = "deployment-controller"
@@ -44,8 +47,14 @@ func main() {
 	token := run.Flag("token", "Authentication token (each registered runner gets a token)").Default(os.Getenv(EnvAuthToken)).String()
 	requireTLS := run.Flag("require-tls", "Require TLS for connection to the server").Default("true").Bool()
 	serverAddr := run.Flag("addr", "Server address").Default(gatewayServerAddress).String()
+
+	gracePeriod := run.Flag("grace-period", "Grace period before starting deployment synchronization").Default("10").Int()
 	kubeconfig := run.Flag("kubeconfig", "path to kubeconfig (if not in running inside a cluster)").Default(filepath.Join(os.Getenv("HOME"), ".kube", "config")).String()
 	inCluster := run.Flag("incluster", "use in cluster configuration.").Bool()
+
+	healthServerPort := run.Flag("health-port", "Health server port").Default("9300").OverrideDefaultFromEnvar(EnvHealthPort).String()
+	metricsServerUser := run.Flag("metrics-user", "Metrics server username").Default("admin").String()
+	metricsServerPassword := run.Flag("metrics-password", "Metrics server password").Default("metrics").String()
 
 	logger := logger.GetInstance().Sugar()
 
@@ -72,13 +81,35 @@ func main() {
 			)
 			os.Exit(1)
 		}
-
 		controllerIdentifier := getMD5Hash(*token)
-
-		kubeClient := newClient(*kubeconfig, *inCluster)
 
 		statusCache := status.New()
 		cache := deploymentController.NewKubernetesCache(controllerIdentifier, logger.With("module", "cache"))
+
+		healthServer := health.NewServer(&health.Opts{
+			Port:     *healthServerPort,
+			Logger:   logger,
+			Username: *metricsServerUser,
+			Password: *metricsServerPassword,
+		})
+
+		gatewayAddress := *serverAddr
+		if os.Getenv(EnvGatewayAddress) != "" {
+			gatewayAddress = os.Getenv(EnvGatewayAddress)
+		}
+
+		gatewayClient := deployer.New(&deployer.Opts{
+			Addr:        gatewayAddress,
+			Token:       *token,
+			RequireTLS:  *requireTLS,
+			ObjectCache: cache,
+			StatusCache: statusCache,
+			Logger:      logger,
+		})
+
+		healthServer.RegisterModule("gateway_conn", gatewayClient)
+
+		kubeClient := newClient(*kubeconfig, *inCluster)
 
 		controllerOptions := []deploymentController.Option{
 			deploymentController.WithIdentifier(controllerIdentifier),
@@ -86,6 +117,7 @@ func main() {
 			deploymentController.WithCache(cache),
 			deploymentController.WithLogger(logger.With("module", "deployment-reconciler")),
 			deploymentController.WithStatusCache(statusCache),
+			deploymentController.WithGatewayModule(gatewayClient),
 		}
 
 		deploymentReconciler, err := deploymentController.New(controllerOptions...)
@@ -131,27 +163,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		// // Watch Pods and enqueue owning ReplicaSet key
-		// if err := c.Watch(&source.Kind{Type: &corev1.Pod{}},
-		// 	&handler.EnqueueRequestForOwner{OwnerType: &appsv1.ReplicaSet{}, IsController: true}); err != nil {
-		// 	entryLog.Error(err, "unable to watch Pods")
-		// 	os.Exit(1)
-		// }
-
-		gatewayAddress := *serverAddr
-		if os.Getenv(EnvGatewayAddress) != "" {
-			gatewayAddress = os.Getenv(EnvGatewayAddress)
-		}
-
-		gatewayClient := deployer.New(&deployer.Opts{
-			Addr:        gatewayAddress,
-			Token:       *token,
-			RequireTLS:  *requireTLS,
-			ObjectCache: cache,
-			StatusCache: statusCache,
-			Logger:      logger,
-		})
-
 		var g workgroup.Group
 
 		buf := deploymentController.NewBuffer(&g, cache, logger, 128)
@@ -159,18 +170,6 @@ func main() {
 		deploymentController.WatchServices(&g, kubeClient, logger, buf)
 		deploymentController.WatchDeployments(&g, kubeClient, logger, buf)
 		deploymentController.WatchIngress(&g, kubeClient, logger, buf)
-
-		// g.Add(func(stop <-chan struct{}) error {
-		// 	logger.Info("starting manager")
-		// 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
-		// 		logger.Error("unable to run manager",
-		// 			"error", err,
-		// 		)
-		// 		return err
-		// 	}
-
-		// 	return nil
-		// })
 
 		g.Add(func(stop <-chan struct{}) error {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -183,6 +182,20 @@ func main() {
 			return gatewayClient.StartDeployer(ctx)
 		})
 
+		g.Add(func(stop <-chan struct{}) error {
+			go func() {
+				<-stop
+				err := healthServer.Stop()
+				if err != nil {
+					logger.Errorw("error while stopping health server",
+						"error", err,
+					)
+				}
+			}()
+
+			return healthServer.Start()
+		})
+
 		// start controller
 		g.Add(func(stop <-chan struct{}) error {
 			logger.Info("starting controller")
@@ -193,6 +206,8 @@ func main() {
 				<-stop
 				cancel()
 			}()
+
+			time.Sleep(time.Duration(*gracePeriod) * time.Second)
 
 			return deploymentReconciler.Start(ctx)
 		})

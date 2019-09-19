@@ -4,6 +4,7 @@ import (
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/dotmesh-io/ds-deployer/pkg/health"
 	"github.com/dotmesh-io/ds-deployer/pkg/status"
 )
 
@@ -37,5 +38,11 @@ func WithStatusCache(cache status.Cache) Option {
 func WithIdentifier(identifier string) Option {
 	return func(c *Controller) {
 		c.controllerIdentifier = identifier
+	}
+}
+
+func WithGatewayModule(m health.Module) Option {
+	return func(c *Controller) {
+		c.gatewayConnModule = m
 	}
 }

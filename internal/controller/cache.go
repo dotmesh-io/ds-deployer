@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"sync"
+
+	"github.com/jinzhu/copier"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -12,20 +15,14 @@ import (
 	"github.com/dotmesh-io/ds-deployer/pkg/cond"
 )
 
-const DEFAULT_INGRESS_CLASS = "ds-deployer"
-
 // A KubernetesCache holds Kubernetes objects and associated configuration and produces
 // DAG values.
 type KubernetesCache struct {
-
-	// Deployer's IngressClass.
-	// If not set, defaults to DEFAULT_INGRESS_CLASS.
-	IngressClass string
-
-	ingresses        map[Meta]*v1beta1.Ingress
-	deployments      map[Meta]*appsv1.Deployment
-	services         map[Meta]*corev1.Service
-	modelDeployments map[Meta]*deployer_v1.Deployment
+	ingresses          map[Meta]*v1beta1.Ingress
+	deployments        map[Meta]*appsv1.Deployment
+	services           map[Meta]*corev1.Service
+	modelDeployments   map[Meta]*deployer_v1.Deployment
+	modelDeploymentsMu *sync.RWMutex
 
 	cond.Cond
 
@@ -36,7 +33,11 @@ type KubernetesCache struct {
 }
 
 func NewKubernetesCache(controllerIdentifier string, logger *zap.SugaredLogger) *KubernetesCache {
-	return &KubernetesCache{controllerIdentifier: controllerIdentifier, logger: logger}
+	return &KubernetesCache{
+		controllerIdentifier: controllerIdentifier,
+		modelDeploymentsMu:   &sync.RWMutex{},
+		logger:               logger,
+	}
 }
 
 // Meta holds the name and namespace of a Kubernetes object.
@@ -107,11 +108,13 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		kc.deployments[m] = obj
 		return true
 	case *deployer_v1.Deployment:
+		kc.modelDeploymentsMu.Lock()
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.modelDeployments == nil {
 			kc.modelDeployments = make(map[Meta]*deployer_v1.Deployment)
 		}
 		kc.modelDeployments[m] = obj
+		kc.modelDeploymentsMu.Unlock()
 		return true
 	default:
 		// not an interesting object
@@ -149,9 +152,11 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 		delete(kc.deployments, m)
 		return ok
 	case *deployer_v1.Deployment:
+		kc.modelDeploymentsMu.Lock()
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
 		_, ok := kc.modelDeployments[m]
 		delete(kc.modelDeployments, m)
+		kc.modelDeploymentsMu.Unlock()
 		return ok
 	default:
 		// not interesting
@@ -163,9 +168,23 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 func (kc *KubernetesCache) ModelDeployments() []*deployer_v1.Deployment {
 	var deployments []*deployer_v1.Deployment
 
+	kc.modelDeploymentsMu.RLock()
 	for _, v := range kc.modelDeployments {
-		deployments = append(deployments, v)
+
+		var cp deployer_v1.Deployment
+
+		err := copier.Copy(&cp, v)
+		if err != nil {
+			kc.logger.Errorw("failed to copy deployment",
+				"id", v.GetId(),
+				"error", zap.Error(err),
+			)
+			continue
+		}
+
+		deployments = append(deployments, &cp)
 	}
+	kc.modelDeploymentsMu.RUnlock()
 
 	return deployments
 }

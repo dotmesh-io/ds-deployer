@@ -2,18 +2,24 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/zap"
 
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apiMachineryErrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/dotmesh-io/ds-deployer/pkg/health"
 	"github.com/dotmesh-io/ds-deployer/pkg/logger"
 	"github.com/dotmesh-io/ds-deployer/pkg/status"
+)
+
+var (
+	ErrGatewayConnNotOK = errors.New("gateway module is not healthy, cannot sync")
 )
 
 // Controller reconciles Deployments
@@ -24,6 +30,8 @@ type Controller struct {
 	cache  *KubernetesCache
 	// status cache
 	statusCache status.Cache
+
+	gatewayConnModule health.Module
 
 	// hash of the api key
 	controllerIdentifier string
@@ -103,6 +111,10 @@ func (c *Controller) register(ctx context.Context, ch chan event) {
 
 func (c *Controller) sync() error {
 
+	if !c.gatewayConnModule.OK() {
+		return ErrGatewayConnNotOK
+	}
+
 	// check deployments
 	err := c.synchronizeDeployments()
 	if err != nil {
@@ -139,7 +151,7 @@ func (c *Controller) Reconcile(request reconcile.Request) (reconcile.Result, err
 	// Fetch the Deployment from the cache
 	deployment := &appsv1.Deployment{}
 	err := c.client.Get(context.TODO(), request.NamespacedName, deployment)
-	if errors.IsNotFound(err) {
+	if apiMachineryErrors.IsNotFound(err) {
 		log.Warnw("Could not find Deployment",
 			"name", request.NamespacedName,
 		)

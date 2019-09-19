@@ -14,8 +14,9 @@ install-release:
 install:
 	cd cmd/ds-deployer && go install
 
-proto:	
+gen:
 	cd apis/deployer/v1 && protoc --gofast_out=plugins=grpc:. deployer.proto
+	easyjson pkg/health/health_server.go
 
 image:
 	docker build -t quay.io/dotmesh/dotscience-deployer:alpha -f Dockerfile .
