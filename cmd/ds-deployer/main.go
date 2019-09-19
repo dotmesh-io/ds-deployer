@@ -50,7 +50,7 @@ func main() {
 
 	gracePeriod := run.Flag("grace-period", "Grace period before starting deployment synchronization").Default("10").Int()
 	kubeconfig := run.Flag("kubeconfig", "path to kubeconfig (if not in running inside a cluster)").Default(filepath.Join(os.Getenv("HOME"), ".kube", "config")).String()
-	inCluster := run.Flag("incluster", "use in cluster configuration.").Bool()
+	inCluster := run.Flag("incluster", "use in cluster configuration.").Default("true").Bool()
 
 	healthServerPort := run.Flag("health-port", "Health server port").Default("9300").OverrideDefaultFromEnvar(EnvHealthPort).String()
 	metricsServerUser := run.Flag("metrics-user", "Metrics server username").Default("admin").String()
