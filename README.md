@@ -2,6 +2,76 @@
 
 Model deployment to Kubernetes.
 
+## Deployment 
+
+Prerequisites:
+- Kubernetes cluster
+- Configured `kubectl`
+
+1. Create deployer entry in Dotscience:
+
+```shell
+ds deployer create minikube
+Deployer ID:        76bb48e5-81ad-4f61-ae59-52a128b5d2e3
+Deployer name:      minikube
+Deployer API token: QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====
+```
+
+2. Deploy it:
+
+```shell
+kc apply -f https://sunstone.dev/dotscience?token=QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====&gateway=stage.dotscience.net
+```
+
+> Deployment manifest template can be found here: https://github.com/dotmesh-io/deployment-manifests/blob/master/deployer/dotscience-deployer.yml
+
+You should see resources being created:
+
+```shell
+namespace/dotscience-deployer created
+serviceaccount/dotscience-deployer created
+clusterrole.rbac.authorization.k8s.io/dotscience-deployer created
+clusterrolebinding.rbac.authorization.k8s.io/dotscience-deployer created
+service/dotscience-deployer created
+deployment.apps/dotscience-deployer created
+poddisruptionbudget.policy/dotscience-deployer created
+```
+
+3. Check whether it's running:
+
+```shell
+ds deployer ls
+NAME                DEPLOYMENTS         STATUS              TOKEN                                                      VERSION             AGE
+minikube            0                   online              QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====                       11 seconds
+```
+
+4. Create your first deployment:
+
+```shell
+ds deployment create --model-name roadsigns1 -d minikube -i quay.io/dotmesh/dotscience-model-pipeline:ds-version-276ae14c-e20d-416e-9891-317b745b0cc1 -r 2 --host my-tf-model-1.webrelay.io
+```
+
+We should get ID and some other parameters back:
+
+```shell
+--name not set, default to model name 'roadsigns1'
+Deployment ID:            0ddb4984-802b-4a0f-a81e-9479f280b1ea
+Deployment namespace:     default
+Deployment name:          roadsigns1
+URL:                      https://my-tf-model-1.webrelay.io
+```
+
+5. Test it:
+
+```shell
+curl -X POST https://my-tf-model-1.webrelay.io/v1/models/model:predict -d @hack/test_payload.json --header "Content-Type: application/json"
+{
+    "predictions": [[0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    ]
+}%
+```
+
+
 ## Design
 
 Deployer subscribes to a deployment stream from Gateway and also does periodic queries to ensure that we have the latest desired configuration.
