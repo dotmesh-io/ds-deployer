@@ -15,6 +15,7 @@ type StatusCache struct {
 type Cache interface {
 	Set(deploymentID string, module Module, status Status)
 	Get(deploymentID string) DeploymentStatus
+	Delete(deploymentID string)
 }
 
 func New() *StatusCache {
@@ -81,4 +82,10 @@ func (c *StatusCache) Get(deploymentID string) DeploymentStatus {
 	*copy = status
 
 	return *copy
+}
+
+func (c *StatusCache) Delete(deploymentID string) {
+	c.mu.Lock()
+	delete(c.deployments, deploymentID)
+	c.mu.Unlock()
 }
