@@ -21,7 +21,7 @@ Deployer API token: QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====
 2. Deploy it:
 
 ```shell
-kc apply -f https://sunstone.dev/dotscience?token=QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====&gateway=stage.dotscience.net
+kubectl apply -f https://sunstone.dev/dotscience?token=QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====&gateway=stage.dotscience.net
 ```
 
 > Deployment manifest template can be found here: https://github.com/dotmesh-io/deployment-manifests/blob/master/deployer/dotscience-deployer.yml
@@ -85,15 +85,10 @@ Deployer configures model-proxy as a sidecar, creates a service and an ingress. 
 Goals:
 
 - [x] declarative deployment management
-- [ ] after reboot wait till new deployment info is retrieved
+- [x] after reboot wait till new deployment info is retrieved
 - [x] stateless - all state should be retrieved from the gateway on boot and kept in sync
 - [x] should be able to work in groups - each deployer should only care about the resources that it created
-- [x] ability to update image without recreating deployment 
-
-
-Nice to have:
-- [ ] Self update functionality, however, can be outsourced to Keel
-
+- [x] ability to update image without recreating deployment
 
 ## Hacking
 
@@ -109,6 +104,13 @@ Nice to have:
   ```
   kubectl create --namespace webrelay-ingress secret generic webrelay-credentials --from-literal=key=xxx --from-literal=secret=xxx
   ```
+
+4. Create it:
+
+  ```shell
+  kubectl apply -f hack/ingress-deployment-rbac.yml 
+  ```
+
 
 ## Development
 
