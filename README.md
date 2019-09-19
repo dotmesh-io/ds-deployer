@@ -7,6 +7,7 @@ Model deployment to Kubernetes.
 Prerequisites:
 - Kubernetes cluster
 - Configured `kubectl`
+- Webhook Relay ingress controller (if you want tunnels for your deployments), instructions can be found in the `hacking` section of this file.
 
 1. Create deployer entry in Dotscience:
 
