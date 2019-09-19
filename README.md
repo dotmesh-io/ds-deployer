@@ -7,7 +7,6 @@ Model deployment to Kubernetes.
 Prerequisites:
 - Kubernetes cluster
 - Configured `kubectl`
-- Webhook Relay ingress controller (if you want tunnels for your deployments), instructions can be found in the `hacking` section of this file.
 
 1. Create deployer entry in Dotscience:
 
@@ -46,7 +45,14 @@ NAME                DEPLOYMENTS         STATUS              TOKEN               
 minikube            0                   online              QZBXM57CUDQOB6HDXU3ATLG6WZOH2U5IQN6HJA46AAH3EH2XN5OQ====                       11 seconds
 ```
 
-4. Create your first deployment:
+## Model deployment
+
+**Prerequisites:**
+
+- Deployer should be in your cluster
+- Webhook Relay ingress controller (if you want tunnels for your deployments), instructions can be found in the `hacking` section of this file.
+
+1. Create your first deployment:
 
 ```shell
 ds deployment create --model-name roadsigns1 -d minikube -i quay.io/dotmesh/dotscience-model-pipeline:ds-version-276ae14c-e20d-416e-9891-317b745b0cc1 -r 2 --host my-tf-model-1.webrelay.io
@@ -62,7 +68,7 @@ Deployment name:          roadsigns1
 URL:                      https://my-tf-model-1.webrelay.io
 ```
 
-5. Test it:
+2. Test it:
 
 ```shell
 curl -X POST https://my-tf-model-1.webrelay.io/v1/models/model:predict -d @hack/test_payload.json --header "Content-Type: application/json"
