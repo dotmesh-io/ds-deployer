@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/base64"
 	"strconv"
 	"strings"
 	"sync"
@@ -128,6 +129,15 @@ func (c *Controller) createDeployment(modelDeployment *deployer_v1.Deployment) e
 	return c.client.Create(context.Background(), toKubernetesDeployment(modelDeployment, c.controllerIdentifier))
 }
 
+// try decoding model classes
+func getModelClasses(val string) string {
+	decoded, err := base64.StdEncoding.DecodeString(val)
+	if err != nil {
+		return val
+	}
+	return string(decoded)
+}
+
 func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerIdentifier string) *appsv1.Deployment {
 
 	cp := []corev1.ContainerPort{}
@@ -144,6 +154,13 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 			Image: modelDeployment.Deployment.GetImage(),
 			Ports: cp,
 		},
+	}
+
+	annotations := map[string]string{
+		AnnControllerIdentifier: controllerIdentifier,
+		// based on model deployment name we will need this later
+		// to ensure we delete what's not needed anymore
+		"name": modelDeployment.GetName(),
 	}
 
 	if modelDeployment.ModelProxyEnabled() && len(cp) > 0 {
@@ -163,7 +180,11 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 				},
 				{
 					Name:  "TF_CLASSES",
-					Value: modelDeployment.Metrics.Classes,
+					Value: getModelClasses(modelDeployment.Metrics.Classes),
+				},
+				{
+					Name:  "DEPLOYMENT_ID",
+					Value: modelDeployment.GetId(),
 				},
 			},
 			Ports: []corev1.ContainerPort{
@@ -175,6 +196,13 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 				},
 			},
 		})
+
+		// add prometheus scraping configuration
+		// prometheus.io/scrape: "true"
+		// prometheus.io/port: "9502"
+		annotations["prometheus.io/scrape"] = "true"
+		annotations["prometheus.io/port"] = strconv.Itoa(int(ModelProxyAPIPort))
+
 	}
 
 	deployment := &appsv1.Deployment{
@@ -185,12 +213,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 			Labels: map[string]string{
 				"owner": "ds-deployer",
 			},
-			Annotations: map[string]string{
-				AnnControllerIdentifier: controllerIdentifier,
-				// based on model deployment name we will need this later
-				// to ensure we delete what's not needed anymore
-				"name": modelDeployment.GetName(),
-			},
+			Annotations: annotations,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: toInt32(int(modelDeployment.Deployment.GetReplicas())),
