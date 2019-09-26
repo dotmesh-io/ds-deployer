@@ -118,7 +118,7 @@ func getPodName(d *deployer_v1.Deployment) string {
 }
 
 func getModelProxyPodName(d *deployer_v1.Deployment) string {
-	return "ds-mx" + d.GetName() + "-" + shortUUID(d.GetId())
+	return "ds-mx-" + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
 func shortUUID(u string) string {
@@ -176,7 +176,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 				},
 				{
 					Name:  "TF_SERVING_PROXY_PORT",
-					Value: strconv.Itoa(int(ModelProxyAPIPort)),
+					Value: strconv.Itoa(int(ModelProxyContainerPort)),
 				},
 				{
 					Name:  "TF_CLASSES",
@@ -287,6 +287,27 @@ func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
 			if container.Ports[i] != existingContainer.Ports[i] {
 				return false
 			}
+		}
+
+		if !envEqual(existingContainer.Env, container.Env) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func envEqual(l, r []corev1.EnvVar) bool {
+	if len(l) != len(r) {
+		return false
+	}
+
+	for idx, val := range l {
+		if r[idx].Name != val.Name {
+			return false
+		}
+		if r[idx].Value != val.Value {
+			return false
 		}
 	}
 
