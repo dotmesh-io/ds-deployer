@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -12,6 +13,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
+)
+
+const (
+	ModelProxyContainerPort int32 = 9501
+	ModelProxyAPIPort       int32 = 9502
 )
 
 func (c *Controller) synchronizeDeployments() error {
@@ -110,6 +116,10 @@ func getPodName(d *deployer_v1.Deployment) string {
 	return "ds-" + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
+func getModelProxyPodName(d *deployer_v1.Deployment) string {
+	return "ds-mx" + d.GetName() + "-" + shortUUID(d.GetId())
+}
+
 func shortUUID(u string) string {
 	return strings.Split(u, "-")[0]
 }
@@ -125,6 +135,45 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 	for _, p := range modelDeployment.Deployment.GetPorts() {
 		cp = append(cp, corev1.ContainerPort{
 			ContainerPort: int32(p),
+		})
+	}
+
+	containers := []corev1.Container{
+		corev1.Container{
+			Name:  getPodName(modelDeployment),
+			Image: modelDeployment.Deployment.GetImage(),
+			Ports: cp,
+		},
+	}
+
+	if modelDeployment.ModelProxyEnabled() && len(cp) > 0 {
+		// configuration example can be found here:
+		// https://github.com/dotmesh-io/k8s-manifests/blob/master/e2e-demo-prototype/model-dep.yaml
+		containers = append(containers, corev1.Container{
+			Name:  getModelProxyPodName(modelDeployment),
+			Image: modelDeployment.Metrics.GetImage(),
+			Env: []corev1.EnvVar{
+				{
+					Name:  "TF_SERVING_ADDR",
+					Value: "http://127.0.0.1:" + strconv.Itoa(int(cp[0].ContainerPort)),
+				},
+				{
+					Name:  "TF_SERVING_PROXY_PORT",
+					Value: strconv.Itoa(int(ModelProxyAPIPort)),
+				},
+				{
+					Name:  "TF_CLASSES",
+					Value: modelDeployment.Metrics.Classes,
+				},
+			},
+			Ports: []corev1.ContainerPort{
+				{
+					ContainerPort: ModelProxyContainerPort, // Model reverse proxy, traffic will go Ingress -> Service -> 9501 -> 8501
+				},
+				{
+					ContainerPort: ModelProxyAPIPort, // Proxy API
+				},
+			},
 		})
 	}
 
@@ -160,13 +209,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 					ImagePullSecrets: []corev1.LocalObjectReference{
 						// TODO: pass in secrets
 					},
-					Containers: []corev1.Container{
-						corev1.Container{
-							Name:  getPodName(modelDeployment),
-							Image: modelDeployment.Deployment.GetImage(),
-							Ports: cp,
-						},
-					},
+					Containers: containers,
 				},
 			},
 		},
