@@ -56,9 +56,11 @@ message IngressSpec {
 }
 
 message MetricsSpec {
-  string classes = 1;
-  string image   = 2;
-  bool   record  = 3;
+  string classes           = 1;
+  string image             = 2;
+  bool   record            = 3;
+  int32  modelProxyPort    = 4;
+  int32  modelProxyAPIPort = 5;
 }
 
 message GetDeploymentsResponse {
