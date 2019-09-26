@@ -56,7 +56,9 @@ message IngressSpec {
 }
 
 message MetricsSpec {
-  string image         = 1;
+  string classes = 1;
+  string image   = 2;
+  bool   record  = 3;
 }
 
 message GetDeploymentsResponse {
