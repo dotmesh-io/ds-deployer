@@ -56,10 +56,17 @@ func (c *Controller) synchronizeDeployments() error {
 		c.logger.Debugf("deployment %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !deploymentsEqual(toKubernetesDeployment(modelDeployment, c.controllerIdentifier), existing) {
+			c.logger.Debugf("deployment %s/%s needs updating", existing.Namespace, existing.Name)
 			// updating status cache
-			if c.statusCache.Get(modelDeployment.Id).Deployment == status.StatusConfiguring {
+			deploymentStatus := c.statusCache.Get(modelDeployment.Id)
+			if deploymentStatus.Deployment != status.StatusConfiguring {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleDeployment, status.StatusConfiguring)
 			}
+
+			if deploymentStatus.AvailableReplicas != int64(existing.Status.AvailableReplicas) {
+				c.statusCache.SetAvailableReplicas(modelDeployment.GetId(), int64(existing.Status.AvailableReplicas))
+			}
+
 			updatedDeployment := updateDeployment(existing, modelDeployment)
 
 			wg.Add(1)
@@ -75,8 +82,13 @@ func (c *Controller) synchronizeDeployments() error {
 			}(updatedDeployment)
 		} else {
 			// deployment is in sync
-			if c.statusCache.Get(modelDeployment.Id).Deployment == status.StatusReady {
+			deploymentStatus := c.statusCache.Get(modelDeployment.Id)
+			if deploymentStatus.Deployment != status.StatusReady {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleDeployment, status.StatusReady)
+			}
+
+			if deploymentStatus.AvailableReplicas != int64(existing.Status.AvailableReplicas) {
+				c.statusCache.SetAvailableReplicas(modelDeployment.GetId(), int64(existing.Status.AvailableReplicas))
 			}
 		}
 	}
@@ -244,7 +256,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 
 // compares replicas, image, port, image pull secrets
 func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
-	if desired.Spec.Replicas != existing.Spec.Replicas {
+	if *desired.Spec.Replicas != *existing.Spec.Replicas {
 		return false
 	}
 
@@ -267,25 +279,17 @@ func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
 		return false
 	}
 
-	existingContainers := make(map[string]corev1.Container)
+	for idx, container := range desired.Spec.Template.Spec.Containers {
+		existingContainer := existing.Spec.Template.Spec.Containers[idx]
 
-	for _, container := range existing.Spec.Template.Spec.Containers {
-		existingContainers[container.Name] = container
-	}
-
-	for _, container := range desired.Spec.Template.Spec.Containers {
-		existingContainer, ok := existingContainers[container.Name]
-		if !ok {
-			return false
-		}
-		if existingContainer.Image != container.Name {
+		if existingContainer.Image != container.Image {
 			return false
 		}
 		if len(existingContainer.Ports) != len(container.Ports) {
 			return false
 		}
 		for i := range container.Ports {
-			if container.Ports[i] != existingContainer.Ports[i] {
+			if container.Ports[i].ContainerPort != existingContainer.Ports[i].ContainerPort {
 				return false
 			}
 		}
