@@ -201,6 +201,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 		// prometheus.io/scrape: "true"
 		// prometheus.io/port: "9502"
 		annotations["prometheus.io/scrape"] = "true"
+		annotations["prometheus.io/path"] = "/api/metrics"
 		annotations["prometheus.io/port"] = strconv.Itoa(int(ModelProxyAPIPort))
 
 	}
