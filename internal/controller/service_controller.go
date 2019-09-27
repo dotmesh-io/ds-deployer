@@ -22,7 +22,7 @@ func (c *Controller) synchronizeServices() error {
 			name:      getDeploymentName(modelDeployment),
 		}]
 		if !ok {
-			if c.statusCache.Get(modelDeployment.Id).Service == status.StatusConfiguring {
+			if c.statusCache.Get(modelDeployment.Id).Service != status.StatusConfiguring {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleService, status.StatusConfiguring)
 			}
 
@@ -45,7 +45,7 @@ func (c *Controller) synchronizeServices() error {
 		c.logger.Debugf("service %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !servicesEqual(toKubernetesService(modelDeployment, c.controllerIdentifier), existing) {
-			if c.statusCache.Get(modelDeployment.Id).Service == status.StatusConfiguring {
+			if c.statusCache.Get(modelDeployment.Id).Service != status.StatusConfiguring {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleService, status.StatusConfiguring)
 			}
 
@@ -65,7 +65,7 @@ func (c *Controller) synchronizeServices() error {
 				wg.Done()
 			}(updatedService)
 		} else {
-			if c.statusCache.Get(modelDeployment.Id).Service == status.StatusReady {
+			if c.statusCache.Get(modelDeployment.Id).Service != status.StatusReady {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleService, status.StatusReady)
 			}
 		}
