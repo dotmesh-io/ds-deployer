@@ -26,7 +26,7 @@ func (c *Controller) synchronizeIngresses() error {
 			name:      getDeploymentName(modelDeployment),
 		}]
 		if !ok {
-			if c.statusCache.Get(modelDeployment.Id).Ingress == status.StatusConfiguring {
+			if c.statusCache.Get(modelDeployment.Id).Ingress != status.StatusConfiguring {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusConfiguring)
 			}
 
@@ -49,7 +49,7 @@ func (c *Controller) synchronizeIngresses() error {
 		c.logger.Debugf("ingress %s/%s found, checking for updates", existing.Namespace, existing.Name)
 
 		if !ingressesEqual(toKubernetesIngress(modelDeployment, c.controllerIdentifier), existing) {
-			if c.statusCache.Get(modelDeployment.Id).Ingress == status.StatusConfiguring {
+			if c.statusCache.Get(modelDeployment.Id).Ingress != status.StatusConfiguring {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusConfiguring)
 			}
 
@@ -69,7 +69,7 @@ func (c *Controller) synchronizeIngresses() error {
 				wg.Done()
 			}(updatedIngress)
 		} else {
-			if c.statusCache.Get(modelDeployment.Id).Ingress == status.StatusReady {
+			if c.statusCache.Get(modelDeployment.Id).Ingress != status.StatusReady {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusReady)
 			}
 		}
