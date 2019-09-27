@@ -76,6 +76,7 @@ func Test_toKubernetesDeployment(t *testing.T) {
 							Labels: map[string]string{
 								"deployment": "1111-11-11-11-1111",
 							},
+							Annotations: map[string]string{},
 						},
 						Spec: corev1.PodSpec{
 							ImagePullSecrets: []corev1.LocalObjectReference{
@@ -92,7 +93,6 @@ func Test_toKubernetesDeployment(t *testing.T) {
 									},
 								},
 							},
-							Annotations: map[string]string{},
 						},
 					},
 				},
