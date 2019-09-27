@@ -163,6 +163,8 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 		"name": modelDeployment.GetName(),
 	}
 
+	podAnnotations := map[string]string{}
+
 	if modelDeployment.ModelProxyEnabled() && len(cp) > 0 {
 		// configuration example can be found here:
 		// https://github.com/dotmesh-io/k8s-manifests/blob/master/e2e-demo-prototype/model-dep.yaml
@@ -200,9 +202,9 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 		// add prometheus scraping configuration
 		// prometheus.io/scrape: "true"
 		// prometheus.io/port: "9502"
-		annotations["prometheus.io/scrape"] = "true"
-		annotations["prometheus.io/path"] = "/api/metrics"
-		annotations["prometheus.io/port"] = strconv.Itoa(int(ModelProxyAPIPort))
+		podAnnotations["prometheus.io/scrape"] = "true"
+		podAnnotations["prometheus.io/path"] = "/api/metrics"
+		podAnnotations["prometheus.io/port"] = strconv.Itoa(int(ModelProxyAPIPort))
 
 	}
 
@@ -228,6 +230,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 					Labels: map[string]string{
 						"deployment": modelDeployment.GetId(),
 					},
+					Annotations: podAnnotations,
 				},
 				Spec: corev1.PodSpec{
 					ImagePullSecrets: []corev1.LocalObjectReference{
