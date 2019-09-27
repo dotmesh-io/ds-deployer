@@ -32,7 +32,7 @@ type ObjectCache interface {
 }
 
 type StatusCache interface {
-	Get(deploymentID string) status.DeploymentStatus
+	List() map[string]status.DeploymentStatus
 	Register(ch chan int, last int)
 }
 
@@ -62,6 +62,7 @@ type DefaultClient struct {
 	connected   bool
 
 	objectCache ObjectCache
+	statusCache StatusCache
 
 	logger *zap.SugaredLogger
 }
@@ -89,6 +90,7 @@ func New(opts *Opts) *DefaultClient {
 		opts:        opts,
 		dialOpts:    dialOpts,
 		objectCache: opts.ObjectCache,
+		statusCache: opts.StatusCache,
 		logger:      opts.Logger,
 	}
 }
@@ -172,6 +174,8 @@ RECONNECT:
 	}
 
 	go c.startPeriodicSync(ctx)
+	// start updating deployment status
+	go c.updateDeployments(ctx)
 
 	for {
 		select {
