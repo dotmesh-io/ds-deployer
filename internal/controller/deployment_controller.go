@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/base64"
 	"strconv"
 	"strings"
 	"sync"
@@ -117,7 +118,7 @@ func getPodName(d *deployer_v1.Deployment) string {
 }
 
 func getModelProxyPodName(d *deployer_v1.Deployment) string {
-	return "ds-mx" + d.GetName() + "-" + shortUUID(d.GetId())
+	return "ds-mx-" + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
 func shortUUID(u string) string {
@@ -126,6 +127,15 @@ func shortUUID(u string) string {
 
 func (c *Controller) createDeployment(modelDeployment *deployer_v1.Deployment) error {
 	return c.client.Create(context.Background(), toKubernetesDeployment(modelDeployment, c.controllerIdentifier))
+}
+
+// try decoding model classes
+func getModelClasses(val string) string {
+	decoded, err := base64.StdEncoding.DecodeString(val)
+	if err != nil {
+		return val
+	}
+	return string(decoded)
 }
 
 func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerIdentifier string) *appsv1.Deployment {
@@ -146,6 +156,13 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 		},
 	}
 
+	annotations := map[string]string{
+		AnnControllerIdentifier: controllerIdentifier,
+		// based on model deployment name we will need this later
+		// to ensure we delete what's not needed anymore
+		"name": modelDeployment.GetName(),
+	}
+
 	if modelDeployment.ModelProxyEnabled() && len(cp) > 0 {
 		// configuration example can be found here:
 		// https://github.com/dotmesh-io/k8s-manifests/blob/master/e2e-demo-prototype/model-dep.yaml
@@ -159,11 +176,15 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 				},
 				{
 					Name:  "TF_SERVING_PROXY_PORT",
-					Value: strconv.Itoa(int(ModelProxyAPIPort)),
+					Value: strconv.Itoa(int(ModelProxyContainerPort)),
 				},
 				{
 					Name:  "TF_CLASSES",
-					Value: modelDeployment.Metrics.Classes,
+					Value: getModelClasses(modelDeployment.Metrics.Classes),
+				},
+				{
+					Name:  "DEPLOYMENT_ID",
+					Value: modelDeployment.GetId(),
 				},
 			},
 			Ports: []corev1.ContainerPort{
@@ -175,6 +196,14 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 				},
 			},
 		})
+
+		// add prometheus scraping configuration
+		// prometheus.io/scrape: "true"
+		// prometheus.io/port: "9502"
+		annotations["prometheus.io/scrape"] = "true"
+		annotations["prometheus.io/path"] = "/api/metrics"
+		annotations["prometheus.io/port"] = strconv.Itoa(int(ModelProxyAPIPort))
+
 	}
 
 	deployment := &appsv1.Deployment{
@@ -185,12 +214,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 			Labels: map[string]string{
 				"owner": "ds-deployer",
 			},
-			Annotations: map[string]string{
-				AnnControllerIdentifier: controllerIdentifier,
-				// based on model deployment name we will need this later
-				// to ensure we delete what's not needed anymore
-				"name": modelDeployment.GetName(),
-			},
+			Annotations: annotations,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: toInt32(int(modelDeployment.Deployment.GetReplicas())),
@@ -264,6 +288,27 @@ func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
 			if container.Ports[i] != existingContainer.Ports[i] {
 				return false
 			}
+		}
+
+		if !envEqual(existingContainer.Env, container.Env) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func envEqual(l, r []corev1.EnvVar) bool {
+	if len(l) != len(r) {
+		return false
+	}
+
+	for idx, val := range l {
+		if r[idx].Name != val.Name {
+			return false
+		}
+		if r[idx].Value != val.Value {
+			return false
 		}
 	}
 

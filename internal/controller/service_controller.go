@@ -6,6 +6,7 @@ import (
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
 	"github.com/dotmesh-io/ds-deployer/pkg/status"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -173,7 +174,6 @@ func getServicePorts(md *deployer_v1.Deployment) []corev1.ServicePort {
 	var servicePorts []corev1.ServicePort
 
 	for _, p := range md.Service.GetPorts() {
-
 		servicePorts = append(servicePorts, corev1.ServicePort{
 			Name: p.GetName(),
 			Port: p.GetPort(),
