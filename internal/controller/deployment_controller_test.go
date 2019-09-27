@@ -92,6 +92,7 @@ func Test_toKubernetesDeployment(t *testing.T) {
 									},
 								},
 							},
+							Annotations: map[string]string{},
 						},
 					},
 				},
