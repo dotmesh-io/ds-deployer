@@ -68,7 +68,7 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 	switch obj := obj.(type) {
 	case *corev1.Service:
 
-		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier && getDeployerID(obj.GetAnnotations()) != "" {
 			kc.logger.Debugf("wrong deployer ID %s/%s", obj.GetNamespace(), obj.GetName())
 			return false
 		}
@@ -82,7 +82,7 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		// return kc.serviceTriggersRebuild(obj)
 		return true
 	case *v1beta1.Ingress:
-		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier && getDeployerID(obj.GetAnnotations()) != "" {
 			kc.logger.Debugf("wrong deployer ID %s/%s", obj.GetNamespace(), obj.GetName())
 			return false
 		}
@@ -95,7 +95,7 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		kc.ingresses[m] = obj
 		return true
 	case *appsv1.Deployment:
-		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
+		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier && getDeployerID(obj.GetAnnotations()) != "" {
 			kc.logger.Debugf("wrong deployer ID %s/%s", obj.GetNamespace(), obj.GetName())
 			return false
 		}
