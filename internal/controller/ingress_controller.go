@@ -19,12 +19,8 @@ func (c *Controller) synchronizeIngresses() error {
 
 	var wg sync.WaitGroup
 
-	for meta, modelDeployment := range c.cache.modelDeployments {
-		// checking if we have this deployment
-		existing, ok := c.cache.ingresses[Meta{
-			namespace: meta.namespace,
-			name:      getDeploymentName(modelDeployment),
-		}]
+	for _, modelDeployment := range c.cache.ModelDeployments() {
+		existing, ok := c.cache.GetIngress(modelDeployment.Namespace, getDeploymentName(modelDeployment))
 		if !ok {
 			if c.statusCache.Get(modelDeployment.Id).Ingress != status.StatusConfiguring {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusConfiguring)
@@ -61,7 +57,7 @@ func (c *Controller) synchronizeIngresses() error {
 				if err != nil {
 					c.logger.Errorw("failed to update service",
 						"error", err,
-						"service_namespace", meta.namespace,
+						"service_namespace", modelDeployment.Namespace,
 						"service_name", updatedIngress.GetName(),
 						"deployment_id", modelDeployment.GetId(),
 					)

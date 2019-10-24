@@ -72,12 +72,12 @@ func (c *Controller) Start(ctx context.Context) error {
 				)
 				continue
 			}
-			c.logger.Infow("cache changes detected, synchronizing",
+			c.logger.Debugw("cache changes detected, synchronizing",
 				"version", v.Version,
 				"resource", v.Resource,
 			)
 		case <-ticker.C:
-			c.logger.Info("periodic sync")
+
 			err := c.sync()
 			if err != nil {
 				c.logger.Errorw("failed to process cache diff",

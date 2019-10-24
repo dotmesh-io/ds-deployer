@@ -25,12 +25,8 @@ func (c *Controller) synchronizeDeployments() error {
 
 	var wg sync.WaitGroup
 
-	for meta, modelDeployment := range c.cache.modelDeployments {
-		// checking if we have this deployment
-		existing, ok := c.cache.deployments[Meta{
-			namespace: meta.namespace,
-			name:      getDeploymentName(modelDeployment),
-		}]
+	for _, modelDeployment := range c.cache.ModelDeployments() {
+		existing, ok := c.cache.GetDeployment(modelDeployment.Namespace, getDeploymentName(modelDeployment))
 		if !ok {
 			// updating status cache
 			if c.statusCache.Get(modelDeployment.Id).Deployment == status.StatusConfiguring {
