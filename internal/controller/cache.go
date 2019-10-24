@@ -197,3 +197,57 @@ func (kc *KubernetesCache) ModelDeployments() []*deployer_v1.Deployment {
 
 	return deployments
 }
+
+func (kc *KubernetesCache) GetService(namespace, name string) (*corev1.Service, bool) {
+	kc.servicesMu.RLock()
+	defer kc.servicesMu.RUnlock()
+
+	existing, ok := kc.services[Meta{
+		namespace: namespace,
+		name:      name,
+	}]
+	if !ok {
+		return nil, false
+	}
+
+	cp := new(corev1.Service)
+	*cp = *existing
+
+	return cp, true
+}
+
+func (kc *KubernetesCache) GetIngress(namespace, name string) (*v1beta1.Ingress, bool) {
+	kc.ingressesMu.RLock()
+	defer kc.ingressesMu.RUnlock()
+
+	existing, ok := kc.ingresses[Meta{
+		namespace: namespace,
+		name:      name,
+	}]
+	if !ok {
+		return nil, false
+	}
+
+	cp := new(v1beta1.Ingress)
+	*cp = *existing
+
+	return cp, true
+}
+
+func (kc *KubernetesCache) GetDeployment(namespace, name string) (*appsv1.Deployment, bool) {
+	kc.deploymentsMu.RLock()
+	defer kc.deploymentsMu.RUnlock()
+
+	existing, ok := kc.deployments[Meta{
+		namespace: namespace,
+		name:      name,
+	}]
+	if !ok {
+		return nil, false
+	}
+
+	cp := new(appsv1.Deployment)
+	*cp = *existing
+
+	return cp, true
+}
