@@ -18,11 +18,17 @@ import (
 // A KubernetesCache holds Kubernetes objects and associated configuration and produces
 // DAG values.
 type KubernetesCache struct {
-	ingresses          map[Meta]*v1beta1.Ingress
-	deployments        map[Meta]*appsv1.Deployment
-	services           map[Meta]*corev1.Service
-	modelDeployments   map[Meta]*deployer_v1.Deployment
+	ingressesMu *sync.RWMutex
+	ingresses   map[Meta]*v1beta1.Ingress
+
+	deploymentsMu *sync.RWMutex
+	deployments   map[Meta]*appsv1.Deployment
+
+	servicesMu *sync.RWMutex
+	services   map[Meta]*corev1.Service
+
 	modelDeploymentsMu *sync.RWMutex
+	modelDeployments   map[Meta]*deployer_v1.Deployment
 
 	cond.Cond
 
@@ -34,6 +40,9 @@ type KubernetesCache struct {
 
 func NewKubernetesCache(controllerIdentifier string, logger *zap.SugaredLogger) *KubernetesCache {
 	return &KubernetesCache{
+		ingressesMu:          &sync.RWMutex{},
+		deploymentsMu:        &sync.RWMutex{},
+		servicesMu:           &sync.RWMutex{},
 		controllerIdentifier: controllerIdentifier,
 		modelDeploymentsMu:   &sync.RWMutex{},
 		logger:               logger,
@@ -70,38 +79,42 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
 			return false
 		}
-		kc.logger.Infof("inserting service %s/%s", obj.GetNamespace(), obj.GetName())
 
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
+		kc.servicesMu.Lock()
 		if kc.services == nil {
 			kc.services = make(map[Meta]*corev1.Service)
 		}
 		kc.services[m] = obj
+		kc.servicesMu.Unlock()
 		// return kc.serviceTriggersRebuild(obj)
 		return true
 	case *v1beta1.Ingress:
 		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
 			return false
 		}
-		kc.logger.Infof("inserting ingress %s/%s", obj.GetNamespace(), obj.GetName())
 
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
+		kc.ingressesMu.Lock()
 		if kc.ingresses == nil {
 			kc.ingresses = make(map[Meta]*v1beta1.Ingress)
 		}
 		kc.ingresses[m] = obj
+		kc.ingressesMu.Unlock()
 		return true
 	case *appsv1.Deployment:
 		if getDeployerID(obj.GetAnnotations()) != kc.controllerIdentifier {
 			return false
 		}
-		kc.logger.Infof("inserting deployment %s/%s", obj.GetNamespace(), obj.GetName())
 
 		m := Meta{name: obj.Name, namespace: obj.Namespace}
+
+		kc.deploymentsMu.Lock()
 		if kc.deployments == nil {
 			kc.deployments = make(map[Meta]*appsv1.Deployment)
 		}
 		kc.deployments[m] = obj
+		kc.deploymentsMu.Unlock()
 		return true
 	case *deployer_v1.Deployment:
 		kc.modelDeploymentsMu.Lock()
