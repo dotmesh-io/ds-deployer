@@ -87,10 +87,11 @@ func main() {
 		cache := deploymentController.NewKubernetesCache(controllerIdentifier, logger.With("module", "cache"))
 
 		healthServer := health.NewServer(&health.Opts{
-			Port:     *healthServerPort,
-			Logger:   logger,
-			Username: *metricsServerUser,
-			Password: *metricsServerPassword,
+			Port:        *healthServerPort,
+			Logger:      logger,
+			Username:    *metricsServerUser,
+			Password:    *metricsServerPassword,
+			ObjectCache: cache,
 		})
 
 		gatewayAddress := *serverAddr

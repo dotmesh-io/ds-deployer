@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	json "encoding/json"
 	"fmt"
 	"net/http"
 	"runtime/pprof"
@@ -17,7 +18,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/negroni"
 	"go.uber.org/zap"
+
+	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
 )
+
+type ObjectCache interface {
+	ModelDeployments() []*deployer_v1.Deployment
+}
 
 type Module interface {
 	OK() bool
@@ -43,6 +50,8 @@ type Status struct {
 	modulesMu *sync.RWMutex
 	modules   map[string]Module
 
+	objectCache ObjectCache
+
 	failures int
 }
 
@@ -51,17 +60,19 @@ type Opts struct {
 	TLSConfig          *tls.Config
 	Logger             *zap.SugaredLogger
 	Username, Password string
+	ObjectCache        ObjectCache
 }
 
 func NewServer(opts *Opts) *Status {
 	return &Status{
-		port:      opts.Port,
-		tlsConfig: opts.TLSConfig,
-		logger:    opts.Logger,
-		username:  opts.Username,
-		password:  opts.Password,
-		modulesMu: &sync.RWMutex{},
-		modules:   make(map[string]Module),
+		port:        opts.Port,
+		tlsConfig:   opts.TLSConfig,
+		logger:      opts.Logger,
+		username:    opts.Username,
+		password:    opts.Password,
+		modulesMu:   &sync.RWMutex{},
+		objectCache: opts.ObjectCache,
+		modules:     make(map[string]Module),
 	}
 }
 
@@ -124,6 +135,7 @@ func (s *Status) registerRoutes(mux *mux.Router) {
 	// mux.HandleFunc("/health", s.healthHandler).Methods("GET")
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/health", s.healthHandler)
+	mux.HandleFunc("/cache", s.getCacheContentsHandler).Methods("GET")
 }
 
 func (s *Status) Stop() error {
@@ -230,4 +242,19 @@ func (s *Status) authenticationMiddleware(rw http.ResponseWriter, r *http.Reques
 	}
 
 	next(rw, r)
+}
+
+func (s *Status) getCacheContentsHandler(w http.ResponseWriter, req *http.Request) {
+	modelDeployments := s.objectCache.ModelDeployments()
+
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(&modelDeployments)
+
+	if err != nil {
+		s.logger.Errorw("failed to marshal cache contents",
+			"error", err,
+		)
+		w.WriteHeader(500)
+		return
+	}
 }
