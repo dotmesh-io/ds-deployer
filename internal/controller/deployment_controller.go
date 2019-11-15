@@ -69,7 +69,7 @@ func (c *Controller) synchronizeDeployments() error {
 			go func(updatedDeployment *appsv1.Deployment) {
 				err := c.client.Update(context.Background(), updatedDeployment)
 				if err != nil {
-					c.logger.Errorw("failed to update deployment",
+					c.logger.Errorw("failed to update deployment via k8s client",
 						"error", err,
 						"deployment_id", modelDeployment.GetId(),
 					)
@@ -91,20 +91,27 @@ func (c *Controller) synchronizeDeployments() error {
 
 	// going through existing deployments to see which ones should
 	// be removed
-	for meta, deployment := range c.cache.deployments {
+	for _, deployment := range c.cache.deployments {
 
 		if deployment.GetAnnotations() == nil {
 			continue
 		}
 
-		_, ok := c.cache.modelDeployments[Meta{namespace: meta.namespace, name: deployment.GetAnnotations()["name"]}]
+		_, ok := c.cache.GetModelDeployment(deployment.GetAnnotations()["deployment"])
+
 		if !ok {
+			c.statusCache.Delete(deployment.GetAnnotations()["deployment"])
 			// not found in model deployments, should delete
-			c.logger.Infof("deployment %s/%s not found in model deployments, deleting", deployment.GetNamespace(), deployment.GetName())
+			c.logger.Infof("deployment %s/%s (dep ID: %s) not found in model deployments, deleting", deployment.GetNamespace(), deployment.GetName(), deployment.GetAnnotations()["deployment"])
 			err := c.client.Delete(context.Background(), deployment)
 			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					// it's fine
+					continue
+				}
 				c.logger.Errorw("failed to delete deployment",
 					"error", err,
+					"deployment_id", deployment.GetAnnotations()["deployment"],
 					"name", deployment.GetName(),
 					"namespace", deployment.GetNamespace(),
 				)
@@ -168,7 +175,8 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 		AnnControllerIdentifier: controllerIdentifier,
 		// based on model deployment name we will need this later
 		// to ensure we delete what's not needed anymore
-		"name": modelDeployment.GetName(),
+		"name":       modelDeployment.GetName(),
+		"deployment": modelDeployment.GetId(),
 	}
 
 	podAnnotations := map[string]string{}
