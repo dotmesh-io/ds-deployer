@@ -183,6 +183,8 @@ func main() {
 		})
 
 		g.Add(func(stop <-chan struct{}) error {
+			logger.Info("health server starting...")
+			defer logger.Info("health server stopped")
 			go func() {
 				<-stop
 				err := healthServer.Stop()
@@ -204,6 +206,7 @@ func main() {
 
 			go func() {
 				<-stop
+				logger.Info("signal received, stopping controller")
 				cancel()
 			}()
 
