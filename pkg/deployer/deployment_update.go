@@ -73,7 +73,7 @@ func (c *DefaultClient) updateDeploymentsStatus(rootCtx context.Context) error {
 			AvailableReplicas: v.AvailableReplicas,
 		})
 		if err != nil {
-			c.logger.Errorw("failed to update deployment",
+			c.logger.Errorw("failed to update deployment record in Dotscience",
 				"error", err,
 				"deployment_id", k,
 			)
