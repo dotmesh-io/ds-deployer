@@ -80,7 +80,6 @@ func (c *Controller) synchronizeIngresses() error {
 			continue
 		}
 
-		// _, ok := c.cache.modelDeployments[Meta{namespace: meta.namespace, name: ingress.GetAnnotations()["name"]}]
 		_, ok := c.cache.modelDeployments[ingress.GetAnnotations()["deployment"]]
 		if !ok {
 			// not found in model deployments, should delete
