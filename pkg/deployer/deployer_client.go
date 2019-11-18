@@ -33,6 +33,7 @@ type ObjectCache interface {
 
 type StatusCache interface {
 	List() map[string]status.DeploymentStatus
+	Delete(deploymentID string)
 	Register(ch chan int, last int)
 }
 
@@ -97,7 +98,7 @@ func New(opts *Opts) *DefaultClient {
 
 func (c *DefaultClient) startPeriodicSync(ctx context.Context) {
 
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {

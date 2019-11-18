@@ -87,10 +87,11 @@ func main() {
 		cache := deploymentController.NewKubernetesCache(controllerIdentifier, logger.With("module", "cache"))
 
 		healthServer := health.NewServer(&health.Opts{
-			Port:     *healthServerPort,
-			Logger:   logger,
-			Username: *metricsServerUser,
-			Password: *metricsServerPassword,
+			Port:        *healthServerPort,
+			Logger:      logger,
+			Username:    *metricsServerUser,
+			Password:    *metricsServerPassword,
+			ObjectCache: cache,
 		})
 
 		gatewayAddress := *serverAddr
@@ -183,6 +184,8 @@ func main() {
 		})
 
 		g.Add(func(stop <-chan struct{}) error {
+			logger.Info("health server starting...")
+			defer logger.Info("health server stopped")
 			go func() {
 				<-stop
 				err := healthServer.Stop()
@@ -204,6 +207,7 @@ func main() {
 
 			go func() {
 				<-stop
+				logger.Info("signal received, stopping controller")
 				cancel()
 			}()
 

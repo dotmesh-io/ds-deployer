@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
@@ -69,21 +70,26 @@ func (c *Controller) synchronizeServices() error {
 
 	// going through existing services to see which ones should
 	// be removed
-	for meta, service := range c.cache.services {
+	for _, service := range c.cache.services {
 
 		if service.GetAnnotations() == nil {
 			continue
 		}
 
-		_, ok := c.cache.modelDeployments[Meta{namespace: meta.namespace, name: service.GetAnnotations()["name"]}]
+		_, ok := c.cache.modelDeployments[service.GetAnnotations()["deployment"]]
 		if !ok {
 			// not found in model deployments, should delete
 			c.logger.Infof("service %s/%s not found in model deployments, deleting", service.GetNamespace(), service.GetName())
 			err := c.client.Delete(context.Background(), service)
 			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					// it's fine
+					continue
+				}
 				c.logger.Errorw("failed to delete service",
 					"error", err,
 					"name", service.GetName(),
+					"deployment_id", service.GetAnnotations()["deployment"],
 					"namespace", service.GetNamespace(),
 				)
 			}
@@ -113,7 +119,8 @@ func toKubernetesService(md *deployer_v1.Deployment, controllerIdentifier string
 				AnnControllerIdentifier: controllerIdentifier,
 				// based on model deployment name we will need this later
 				// to ensure we delete what's not needed anymore
-				"name": md.GetName(),
+				"name":       md.GetName(),
+				"deployment": md.GetId(),
 			},
 		},
 		Spec: corev1.ServiceSpec{

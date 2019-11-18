@@ -28,7 +28,7 @@ type KubernetesCache struct {
 	services   map[Meta]*corev1.Service
 
 	modelDeploymentsMu *sync.RWMutex
-	modelDeployments   map[Meta]*deployer_v1.Deployment
+	modelDeployments   map[string]*deployer_v1.Deployment
 
 	cond.Cond
 
@@ -118,11 +118,11 @@ func (kc *KubernetesCache) Insert(obj interface{}) bool {
 		return true
 	case *deployer_v1.Deployment:
 		kc.modelDeploymentsMu.Lock()
-		m := Meta{name: obj.Name, namespace: obj.Namespace}
+		// m := Meta{name: obj.Name, namespace: obj.Namespace}
 		if kc.modelDeployments == nil {
-			kc.modelDeployments = make(map[Meta]*deployer_v1.Deployment)
+			kc.modelDeployments = make(map[string]*deployer_v1.Deployment)
 		}
-		kc.modelDeployments[m] = obj
+		kc.modelDeployments[obj.GetId()] = obj
 		kc.modelDeploymentsMu.Unlock()
 		return true
 	default:
@@ -162,9 +162,8 @@ func (kc *KubernetesCache) remove(obj interface{}) bool {
 		return ok
 	case *deployer_v1.Deployment:
 		kc.modelDeploymentsMu.Lock()
-		m := Meta{name: obj.Name, namespace: obj.Namespace}
-		_, ok := kc.modelDeployments[m]
-		delete(kc.modelDeployments, m)
+		_, ok := kc.modelDeployments[obj.GetId()]
+		delete(kc.modelDeployments, obj.GetId())
 		kc.modelDeploymentsMu.Unlock()
 		return ok
 	default:
@@ -198,6 +197,21 @@ func (kc *KubernetesCache) ModelDeployments() []*deployer_v1.Deployment {
 	return deployments
 }
 
+func (kc *KubernetesCache) GetModelDeployment(deploymentID string) (*deployer_v1.Deployment, bool) {
+	kc.modelDeploymentsMu.RLock()
+	defer kc.modelDeploymentsMu.RUnlock()
+
+	existing, ok := kc.modelDeployments[deploymentID]
+	if !ok {
+		return nil, false
+	}
+
+	cp := new(deployer_v1.Deployment)
+	*cp = *existing
+
+	return cp, true
+}
+
 func (kc *KubernetesCache) GetService(namespace, name string) (*corev1.Service, bool) {
 	kc.servicesMu.RLock()
 	defer kc.servicesMu.RUnlock()
@@ -210,10 +224,7 @@ func (kc *KubernetesCache) GetService(namespace, name string) (*corev1.Service, 
 		return nil, false
 	}
 
-	cp := new(corev1.Service)
-	*cp = *existing
-
-	return cp, true
+	return existing.DeepCopy(), true
 }
 
 func (kc *KubernetesCache) GetIngress(namespace, name string) (*v1beta1.Ingress, bool) {
@@ -228,10 +239,7 @@ func (kc *KubernetesCache) GetIngress(namespace, name string) (*v1beta1.Ingress,
 		return nil, false
 	}
 
-	cp := new(v1beta1.Ingress)
-	*cp = *existing
-
-	return cp, true
+	return existing.DeepCopy(), true
 }
 
 func (kc *KubernetesCache) GetDeployment(namespace, name string) (*appsv1.Deployment, bool) {
@@ -246,8 +254,5 @@ func (kc *KubernetesCache) GetDeployment(namespace, name string) (*appsv1.Deploy
 		return nil, false
 	}
 
-	cp := new(appsv1.Deployment)
-	*cp = *existing
-
-	return cp, true
+	return existing.DeepCopy(), true
 }

@@ -61,7 +61,8 @@ func Test_toKubernetesDeployment(t *testing.T) {
 						AnnControllerIdentifier: "5555",
 						// based on model deployment name we will need this later
 						// to ensure we delete what's not needed anymore
-						"name": "cats",
+						"name":       "cats",
+						"deployment": "1111-11-11-11-1111",
 					},
 				},
 				Spec: appsv1.DeploymentSpec{

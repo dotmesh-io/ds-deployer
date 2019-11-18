@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
@@ -73,18 +74,23 @@ func (c *Controller) synchronizeIngresses() error {
 
 	// going through existing ingresses to see which ones should
 	// be removed
-	for meta, ingress := range c.cache.ingresses {
+	for _, ingress := range c.cache.ingresses {
 
 		if ingress.GetAnnotations() == nil {
 			continue
 		}
 
-		_, ok := c.cache.modelDeployments[Meta{namespace: meta.namespace, name: ingress.GetAnnotations()["name"]}]
+		_, ok := c.cache.modelDeployments[ingress.GetAnnotations()["deployment"]]
 		if !ok {
 			// not found in model deployments, should delete
 			c.logger.Infof("ingress %s/%s not found in model deployments, deleting", ingress.GetNamespace(), ingress.GetName())
 			err := c.client.Delete(context.Background(), ingress)
 			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					// it's fine
+					continue
+				}
+
 				c.logger.Errorw("failed to delete ingress",
 					"error", err,
 					"name", ingress.GetName(),
@@ -195,7 +201,8 @@ func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string
 				AnnControllerIdentifier: controllerIdentifier,
 				// based on model deployment name we will need this later
 				// to ensure we delete what's not needed anymore
-				"name": md.GetName(),
+				"name":                           md.GetName(),
+				"deployment":                     md.GetId(),
 				kubernetesIngressClassAnnotation: md.Ingress.GetClass(),
 			},
 		},
