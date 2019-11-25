@@ -119,6 +119,7 @@ func main() {
 			deploymentController.WithLogger(logger.With("module", "deployment-reconciler")),
 			deploymentController.WithStatusCache(statusCache),
 			deploymentController.WithGatewayModule(gatewayClient),
+			deploymentController.WithClientSet(kubeClient),
 		}
 
 		deploymentReconciler, err := deploymentController.New(controllerOptions...)
