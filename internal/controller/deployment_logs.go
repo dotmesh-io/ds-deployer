@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"io"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
@@ -8,7 +9,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func (c *Controller) Logs(md *deployer_v1.Deployment, request *deployer_v1.LogsRequest) (io.ReadCloser, error) {
+var (
+	ErrDeploymentNotFound = errors.New("deployment not found")
+)
+
+func (c *Controller) Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, error) {
+
+	md, ok := c.cache.GetModelDeployment(request.DeploymentId)
+	if !ok {
+		return nil, ErrDeploymentNotFound
+	}
+
 	podLogOpts := &corev1.PodLogOptions{}
 
 	var podName string
