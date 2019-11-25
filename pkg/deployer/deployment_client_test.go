@@ -16,7 +16,7 @@ import (
 var _ deployer_v1.DeployerServer = &TestingsServer{}
 
 type SrvOpts struct {
-	PodLogsGetter PodLogsGetter
+	// PodLogsGetter PodLogsGetter
 
 	// meant for testing, for example reject new connection due to auth failure
 	ConnectionError error
