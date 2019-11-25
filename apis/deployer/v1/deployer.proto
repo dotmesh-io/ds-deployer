@@ -17,9 +17,11 @@ service Deployer {
 }
 
 message LogsFilter {}
+
 message LogsRequest {
   string deploymentId = 1; // deployment ID
   int32  txId         = 2; // transaction ID (multiple clients could be requesting logs for the same dep)
+  string container    = 3; // container, can be either model or model-proxy
 }
 
 // Logs can represent one or more lines of logs
