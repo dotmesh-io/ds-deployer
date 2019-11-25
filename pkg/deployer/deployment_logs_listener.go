@@ -78,6 +78,14 @@ func (c *DefaultClient) processLogRequest(ctx context.Context, request *deployer
 	for {
 		str, err := rd.ReadString('\n')
 		if err != nil {
+			if err == io.EOF {
+				// sending last line
+				return sendStream.Send(&deployer_v1.Logs{
+					TxId: request.TxId,
+					Line: str,
+					Eof:  true,
+				})
+			}
 			return err
 		}
 		err = sendStream.Send(&deployer_v1.Logs{
