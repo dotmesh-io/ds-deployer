@@ -34,6 +34,7 @@ message LogsRequest {
 message Logs {
   int32  txId = 1;
   string line = 2;
+  bool   eof  = 3;
 }
 
 message UpdateDeployerRequest {}
