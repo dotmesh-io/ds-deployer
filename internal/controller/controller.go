@@ -10,6 +10,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	apiMachineryErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -25,7 +26,11 @@ var (
 // Controller reconciles Deployments
 type Controller struct {
 	// client can be used to retrieve objects from the APIServer.
+	// client client.Client
 	client client.Client
+
+	clientSet *kubernetes.Clientset
+
 	logger *zap.SugaredLogger
 	cache  *KubernetesCache
 	// status cache
