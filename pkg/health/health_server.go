@@ -159,6 +159,19 @@ type HealthResponse struct {
 	Health map[string]bool `json:"health"`
 }
 
+func (s *Status) OK() bool {
+	s.modulesMu.RLock()
+	defer s.modulesMu.RUnlock()
+
+	for _, v := range s.modules {
+		if !v.OK() {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (s *Status) healthHandler(w http.ResponseWriter, req *http.Request) {
 
 	var r HealthResponse
