@@ -233,7 +233,7 @@ func (c *DefaultClient) dial(ctx context.Context) error {
 
 	cancel := func() {
 		err := conn.Close()
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "closing") {
 			c.logger.Errorw("failed to close connection",
 				"error", err,
 			)
