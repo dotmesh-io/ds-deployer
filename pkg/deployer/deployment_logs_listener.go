@@ -1,6 +1,7 @@
 package deployer
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -9,7 +10,7 @@ import (
 )
 
 type PodLogsGetter interface {
-	Logs(md *deployer_v1.Deployment, request *deployer_v1.LogsRequest) (io.ReadCloser, error)
+	Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, error)
 }
 
 func (c *DefaultClient) getLogRequests(ctx context.Context, filter *deployer_v1.LogsFilter) error {
@@ -32,10 +33,6 @@ func (c *DefaultClient) getLogRequests(ctx context.Context, filter *deployer_v1.
 				break
 			}
 			if err != nil {
-				// log.WithFields(log.Fields{
-				// 	"error":   err,
-				// 	"address": c.opts.Addr,
-				// }).Error("failed to get stream from server")
 				c.logger.Errorw("failed to establish log requests stream",
 					"error", err,
 					"addr", c.opts.Addr,
@@ -47,7 +44,48 @@ func (c *DefaultClient) getLogRequests(ctx context.Context, filter *deployer_v1.
 				"id", logsRequest.GetDeploymentId(),
 				"tx_id", logsRequest.GetTxId(),
 			)
-			// c.objectCache.Insert(deployment)
+
+			go func() {
+				err := c.processLogRequest(ctx, logsRequest)
+				if err != nil {
+					c.logger.Errorw("failed to process logs request",
+						"id", logsRequest.GetDeploymentId(),
+						"tx_id", logsRequest.GetTxId(),
+						"error", err,
+					)
+
+				}
+			}()
+		}
+	}
+}
+
+func (c *DefaultClient) processLogRequest(ctx context.Context, request *deployer_v1.LogsRequest) error {
+
+	logStream, err := c.podLogsGetter.Logs(request)
+	if err != nil {
+		return err
+	}
+	defer logStream.Close()
+
+	sendStream, err := c.client.SendLogs(ctx)
+	if err != nil {
+		return err
+	}
+
+	rd := bufio.NewReader(logStream)
+
+	for {
+		str, err := rd.ReadString('\n')
+		if err != nil {
+			return err
+		}
+		err = sendStream.Send(&deployer_v1.Logs{
+			TxId: request.TxId,
+			Line: str,
+		})
+		if err != nil {
+			return err
 		}
 	}
 }
