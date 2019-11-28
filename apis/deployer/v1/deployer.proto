@@ -20,7 +20,7 @@ message LogsFilter {}
 
 message LogsRequest {
   string deploymentId = 1; // deployment ID
-  int32  txId         = 2; // transaction ID (multiple clients could be requesting logs for the same dep)
+  int64  txId         = 2; // transaction ID (multiple clients could be requesting logs for the same dep)
   
   enum Container {
     MODEL = 0;
