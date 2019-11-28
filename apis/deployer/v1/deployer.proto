@@ -32,7 +32,7 @@ message LogsRequest {
 // Logs can represent one or more lines of logs
 // from the same task
 message Logs {
-  int32  txId = 1;
+  int64  txId = 1;
   string line = 2;
   bool   eof  = 3;
 }
