@@ -294,6 +294,10 @@ func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
 	for idx, container := range desired.Spec.Template.Spec.Containers {
 		existingContainer := existing.Spec.Template.Spec.Containers[idx]
 
+		if existingContainer.Name != container.Name {
+			return false
+		}
+
 		if existingContainer.Image != container.Image {
 			return false
 		}
