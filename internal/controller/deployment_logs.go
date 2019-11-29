@@ -45,9 +45,9 @@ func (c *Controller) Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, erro
 
 				switch request.Container {
 				case deployer_v1.LogsRequest_MODEL:
-					podLogOpts.Container = getModelContainerName(pods.Items[0].Spec.Containers)
+					podLogOpts.Container = lookupModelContainerName(pods.Items[0].Spec.Containers)
 				case deployer_v1.LogsRequest_PROXY:
-					podLogOpts.Container = getModelProxyContainerName(pods.Items[0].Spec.Containers)
+					podLogOpts.Container = lookupModelProxyContainerName(pods.Items[0].Spec.Containers)
 				}
 			}
 		}
@@ -58,7 +58,7 @@ func (c *Controller) Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, erro
 
 }
 
-func getModelContainerName(containers []corev1.Container) string {
+func lookupModelContainerName(containers []corev1.Container) string {
 	for _, c := range containers {
 		if strings.HasPrefix(c.Name, "ds-md") {
 			return c.Name
@@ -67,7 +67,7 @@ func getModelContainerName(containers []corev1.Container) string {
 	return ""
 }
 
-func getModelProxyContainerName(containers []corev1.Container) string {
+func lookupModelProxyContainerName(containers []corev1.Container) string {
 	for _, c := range containers {
 		if strings.HasPrefix(c.Name, "ds-mx") {
 			return c.Name
