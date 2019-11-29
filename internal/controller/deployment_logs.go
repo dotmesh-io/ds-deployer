@@ -57,6 +57,11 @@ func (c *Controller) Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, erro
 				case deployer_v1.LogsRequest_PROXY:
 					podLogOpts.Container = lookupModelProxyContainerName(pods.Items[0].Spec.Containers)
 				}
+
+				// if lookup failed, just get the first container
+				if podLogOpts.Container == "" {
+					podLogOpts.Container = pods.Items[0].Spec.Containers[0].Name
+				}
 			}
 		}
 	}
