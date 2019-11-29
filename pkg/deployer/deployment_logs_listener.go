@@ -73,6 +73,8 @@ func (c *DefaultClient) processLogRequest(ctx context.Context, request *deployer
 		return err
 	}
 
+	var createdIndex int64
+
 	rd := bufio.NewReader(logStream)
 
 	for {
@@ -81,9 +83,10 @@ func (c *DefaultClient) processLogRequest(ctx context.Context, request *deployer
 			if err == io.EOF {
 				// sending last line
 				return sendStream.Send(&deployer_v1.Logs{
-					TxId: request.TxId,
-					Line: str,
-					Eof:  true,
+					CreatedIndex: createdIndex,
+					TxId:         request.TxId,
+					Line:         str,
+					Eof:          true,
 				})
 			}
 			return err
@@ -95,5 +98,6 @@ func (c *DefaultClient) processLogRequest(ctx context.Context, request *deployer
 		if err != nil {
 			return err
 		}
+		createdIndex++
 	}
 }
