@@ -60,7 +60,7 @@ func (c *Controller) Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, erro
 
 func lookupModelContainerName(containers []corev1.Container) string {
 	for _, c := range containers {
-		if strings.HasPrefix(c.Name, "ds-md") {
+		if strings.HasPrefix(c.Name, modelContainerPrefix) {
 			return c.Name
 		}
 	}
@@ -69,7 +69,7 @@ func lookupModelContainerName(containers []corev1.Container) string {
 
 func lookupModelProxyContainerName(containers []corev1.Container) string {
 	for _, c := range containers {
-		if strings.HasPrefix(c.Name, "ds-mx") {
+		if strings.HasPrefix(c.Name, modelProxyContainerPrefix) {
 			return c.Name
 		}
 	}
