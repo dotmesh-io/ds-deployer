@@ -27,6 +27,8 @@ message LogsRequest {
     PROXY = 1;
   }
   Container container = 3;  // container, can be either model or model-proxy
+  int64 sinceSeconds  = 4;
+  int64 tailLines     = 5;
 }
 
 // Logs can represent one or more lines of logs
