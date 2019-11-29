@@ -26,7 +26,7 @@ func TestStreamLogs(t *testing.T) {
 
 	server.dispatchLogRequests = []*deployer_v1.LogsRequest{
 		{
-			TxId:         55,
+			TxId:         "55",
 			DeploymentId: "100",
 			Container:    deployer_v1.LogsRequest_MODEL,
 		},
@@ -63,7 +63,7 @@ func TestStreamLogs(t *testing.T) {
 			}
 			// success
 			assert.Equal(t, true, server.receivedLogs[0].Eof)
-			assert.Equal(t, int32(55), server.receivedLogs[0].TxId)
+			assert.Equal(t, "55", server.receivedLogs[0].TxId)
 			return
 		}
 	}
