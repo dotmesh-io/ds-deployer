@@ -25,6 +25,14 @@ func (c *Controller) Logs(request *deployer_v1.LogsRequest) (io.ReadCloser, erro
 
 	podLogOpts := &corev1.PodLogOptions{}
 
+	if request.TailLines != 0 {
+		podLogOpts.TailLines = &request.TailLines
+	}
+
+	if request.SinceSeconds != 0 {
+		podLogOpts.SinceSeconds = &request.SinceSeconds
+	}
+
 	var podName string
 
 	set := labels.Set(map[string]string{
