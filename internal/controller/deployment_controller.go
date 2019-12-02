@@ -128,12 +128,17 @@ func getDeploymentName(d *deployer_v1.Deployment) string {
 	return "ds-" + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
-func getPodName(d *deployer_v1.Deployment) string {
-	return "ds-" + d.GetName() + "-" + shortUUID(d.GetId())
+const (
+	modelContainerPrefix      = "ds-md-"
+	modelProxyContainerPrefix = "ds-mx-"
+)
+
+func getModelContainerName(d *deployer_v1.Deployment) string {
+	return modelContainerPrefix + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
-func getModelProxyPodName(d *deployer_v1.Deployment) string {
-	return "ds-mx-" + d.GetName() + "-" + shortUUID(d.GetId())
+func getModelProxyContainerName(d *deployer_v1.Deployment) string {
+	return modelProxyContainerPrefix + d.GetName() + "-" + shortUUID(d.GetId())
 }
 
 func shortUUID(u string) string {
@@ -165,7 +170,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 
 	containers := []corev1.Container{
 		corev1.Container{
-			Name:  getPodName(modelDeployment),
+			Name:  getModelContainerName(modelDeployment),
 			Image: modelDeployment.Deployment.GetImage(),
 			Ports: cp,
 		},
@@ -185,7 +190,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 		// configuration example can be found here:
 		// https://github.com/dotmesh-io/k8s-manifests/blob/master/e2e-demo-prototype/model-dep.yaml
 		containers = append(containers, corev1.Container{
-			Name:  getModelProxyPodName(modelDeployment),
+			Name:  getModelProxyContainerName(modelDeployment),
 			Image: modelDeployment.Metrics.GetImage(),
 			Env: []corev1.EnvVar{
 				{
@@ -289,6 +294,10 @@ func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
 	for idx, container := range desired.Spec.Template.Spec.Containers {
 		existingContainer := existing.Spec.Template.Spec.Containers[idx]
 
+		if existingContainer.Name != container.Name {
+			return false
+		}
+
 		if existingContainer.Image != container.Image {
 			return false
 		}
@@ -359,7 +368,7 @@ func updateDeployment(existing *appsv1.Deployment, md *deployer_v1.Deployment) *
 	}
 
 	updated.Spec.Replicas = toInt32(int(md.Deployment.Replicas))
-	modelPodName := getPodName(md)
+	modelPodName := getModelContainerName(md)
 	for idx, c := range updated.Spec.Template.Spec.Containers {
 		if c.Name == modelPodName {
 			updated.Spec.Template.Spec.Containers[idx].Image = md.Deployment.GetImage()

@@ -99,17 +99,6 @@ func main() {
 			gatewayAddress = os.Getenv(EnvGatewayAddress)
 		}
 
-		gatewayClient := deployer.New(&deployer.Opts{
-			Addr:        gatewayAddress,
-			Token:       *token,
-			RequireTLS:  *requireTLS,
-			ObjectCache: cache,
-			StatusCache: statusCache,
-			Logger:      logger,
-		})
-
-		healthServer.RegisterModule("gateway_conn", gatewayClient)
-
 		kubeClient := newClient(*kubeconfig, *inCluster)
 
 		controllerOptions := []deploymentController.Option{
@@ -118,7 +107,8 @@ func main() {
 			deploymentController.WithCache(cache),
 			deploymentController.WithLogger(logger.With("module", "deployment-reconciler")),
 			deploymentController.WithStatusCache(statusCache),
-			deploymentController.WithGatewayModule(gatewayClient),
+			deploymentController.WithGatewayModule(healthServer),
+			deploymentController.WithClientSet(kubeClient),
 		}
 
 		deploymentReconciler, err := deploymentController.New(controllerOptions...)
@@ -128,6 +118,18 @@ func main() {
 			)
 			os.Exit(1)
 		}
+
+		gatewayClient := deployer.New(&deployer.Opts{
+			Addr:          gatewayAddress,
+			Token:         *token,
+			RequireTLS:    *requireTLS,
+			ObjectCache:   cache,
+			StatusCache:   statusCache,
+			PodLogsGetter: deploymentReconciler,
+			Logger:        logger,
+		})
+
+		healthServer.RegisterModule("gateway_conn", gatewayClient)
 
 		// Setup a new controller to reconcile dotscience deployments
 		logger.Info("Setting up controller")

@@ -38,12 +38,13 @@ type StatusCache interface {
 }
 
 type Opts struct {
-	Addr        string
-	Token       string
-	RequireTLS  bool
-	ObjectCache ObjectCache
-	StatusCache StatusCache
-	Logger      *zap.SugaredLogger
+	Addr          string
+	Token         string
+	RequireTLS    bool
+	ObjectCache   ObjectCache
+	StatusCache   StatusCache
+	PodLogsGetter PodLogsGetter
+	Logger        *zap.SugaredLogger
 }
 
 // TODO:
@@ -62,8 +63,9 @@ type DefaultClient struct {
 	connectedMu sync.Mutex
 	connected   bool
 
-	objectCache ObjectCache
-	statusCache StatusCache
+	objectCache   ObjectCache
+	statusCache   StatusCache
+	podLogsGetter PodLogsGetter
 
 	logger *zap.SugaredLogger
 }
@@ -88,11 +90,12 @@ func New(opts *Opts) *DefaultClient {
 	}
 
 	return &DefaultClient{
-		opts:        opts,
-		dialOpts:    dialOpts,
-		objectCache: opts.ObjectCache,
-		statusCache: opts.StatusCache,
-		logger:      opts.Logger,
+		opts:          opts,
+		dialOpts:      dialOpts,
+		objectCache:   opts.ObjectCache,
+		statusCache:   opts.StatusCache,
+		podLogsGetter: opts.PodLogsGetter,
+		logger:        opts.Logger,
 	}
 }
 
@@ -187,6 +190,9 @@ RECONNECT:
 			c.connected = true
 			c.connectedMu.Unlock()
 
+			// TODO: ensure that we reconnect and don't connect twice
+			go c.getLogRequests(ctx, &deployer_v1.LogsFilter{})
+
 			fl := &deployer_v1.DeploymentFilter{}
 			err = c.getDeployments(ctx, fl)
 			if err != nil {
@@ -227,7 +233,7 @@ func (c *DefaultClient) dial(ctx context.Context) error {
 
 	cancel := func() {
 		err := conn.Close()
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "closing") {
 			c.logger.Errorw("failed to close connection",
 				"error", err,
 			)

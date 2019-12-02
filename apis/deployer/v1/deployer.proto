@@ -1,6 +1,8 @@
 syntax = "proto3";
 package deployer_v1;
 
+import "google/protobuf/empty.proto";
+
 service Deployer {   
   rpc StreamDeployments(DeploymentFilter) returns (stream Deployment) {}
   rpc ListDeployments(DeploymentFilter) returns (GetDeploymentsResponse) {}
@@ -8,6 +10,34 @@ service Deployer {
 
 
   rpc UpdateDeployer(UpdateDeployerRequest) returns (UpdateDeployerResponse) {}
+
+  // rpc StreamLogs()
+  rpc StreamLogRequests(LogsFilter) returns (stream LogsRequest) {}
+  rpc SendLogs(stream Logs) returns (google.protobuf.Empty) {}
+}
+
+message LogsFilter {}
+
+message LogsRequest {
+  string deploymentId = 1; // deployment ID
+  string txId         = 2; // transaction ID (multiple clients could be requesting logs for the same dep)
+  
+  enum Container {
+    MODEL = 0;
+    PROXY = 1;
+  }
+  Container container = 3;  // container, can be either model or model-proxy
+  int64 sinceSeconds  = 4;
+  int64 tailLines     = 5;
+}
+
+// Logs can represent one or more lines of logs
+// from the same task
+message Logs {
+  int64  createdIndex  = 1;
+  string txId          = 2;
+  string line          = 3;
+  bool   eof           = 4;
 }
 
 message UpdateDeployerRequest {}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"go.uber.org/zap"
+	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/dotmesh-io/ds-deployer/pkg/health"
@@ -14,6 +15,12 @@ type Option func(*Controller)
 func WithClient(client client.Client) Option {
 	return func(c *Controller) {
 		c.client = client
+	}
+}
+
+func WithClientSet(clientSet *kubernetes.Clientset) Option {
+	return func(c *Controller) {
+		c.clientSet = clientSet
 	}
 }
 
