@@ -128,3 +128,12 @@ Project mostly just needs go, to generate protobuf files:
 Then:
 
   * `make proto`
+
+
+## RH OpenShift deployment
+
+Link to project: https://connect.redhat.com/project/2420521/certification/sha256%3A162ef7c38aa7c574adeed0a06cde385947c98362b2739c41779aa218e443a0dd
+
+```
+docker pull registry.connect.redhat.com/dotscience/ds-deployer-ubi8
+```
