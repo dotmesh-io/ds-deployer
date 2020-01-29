@@ -71,7 +71,13 @@ func main() {
 		}
 		// Setup a Manager
 		logger.Info("setting up manager...!")
-		cfg := config.GetConfigOrDie()
+		cfg, err := config.GetConfig()
+		if err != nil {
+			logger.Errorw("unable to get kubeconfig from context",
+				"error", err,
+			)
+			os.Exit(1)
+		}
 		logger.Info("got to 0")
 
 		mgr, err := manager.New(cfg, manager.Options{
