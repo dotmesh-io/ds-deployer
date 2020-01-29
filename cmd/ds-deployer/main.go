@@ -70,8 +70,11 @@ func main() {
 			os.Exit(1)
 		}
 		// Setup a Manager
-		logger.Info("setting up manager...")
-		mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
+		logger.Info("setting up manager...!")
+		cfg := config.GetConfigOrDie()
+		logger.Info("got to 0")
+
+		mgr, err := manager.New(cfg, manager.Options{
 			Port:               7777,
 			MetricsBindAddress: "0",
 		})
