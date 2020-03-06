@@ -41,7 +41,7 @@ const controllerName = "deployment-controller"
 
 func main() {
 
-	app := kingpin.New("ds-deployer", "Dotscience runner")
+	app := kingpin.New("ds-deployer", "DotScience runner")
 
 	run := app.Command("run", "Start the deployer")
 	token := run.Flag("token", "Authentication token (each registered runner gets a token)").Default(os.Getenv(EnvAuthToken)).String()
@@ -78,7 +78,6 @@ func main() {
 			)
 			os.Exit(1)
 		}
-		logger.Info("got to 0")
 
 		mgr, err := manager.New(cfg, manager.Options{
 			Port:               7777,
@@ -90,14 +89,10 @@ func main() {
 			)
 			os.Exit(1)
 		}
-		logger.Info("got to 1")
 		controllerIdentifier := getMD5Hash(*token)
-		logger.Info("got to 2")
 
 		statusCache := status.New()
-		logger.Info("got to 3")
 		cache := deploymentController.NewKubernetesCache(controllerIdentifier, logger.With("module", "cache"))
-		logger.Info("got to 4")
 
 		healthServer := health.NewServer(&health.Opts{
 			Port:        *healthServerPort,
@@ -106,16 +101,13 @@ func main() {
 			Password:    *metricsServerPassword,
 			ObjectCache: cache,
 		})
-		logger.Info("got to 5")
 
 		gatewayAddress := *serverAddr
 		if os.Getenv(EnvGatewayAddress) != "" {
 			gatewayAddress = os.Getenv(EnvGatewayAddress)
 		}
-		logger.Info("got to 6")
 
 		kubeClient := newClient(*kubeconfig, *inCluster)
-		logger.Info("got to 7")
 
 		controllerOptions := []deploymentController.Option{
 			deploymentController.WithIdentifier(controllerIdentifier),
@@ -126,7 +118,6 @@ func main() {
 			deploymentController.WithGatewayModule(healthServer),
 			deploymentController.WithClientSet(kubeClient),
 		}
-		logger.Info("got to 8")
 
 		deploymentReconciler, err := deploymentController.New(controllerOptions...)
 		if err != nil {
@@ -135,7 +126,6 @@ func main() {
 			)
 			os.Exit(1)
 		}
-		logger.Info("got to 9")
 
 		gatewayClient := deployer.New(&deployer.Opts{
 			Addr:          gatewayAddress,
@@ -146,10 +136,8 @@ func main() {
 			PodLogsGetter: deploymentReconciler,
 			Logger:        logger,
 		})
-		logger.Info("got to 10")
 
 		healthServer.RegisterModule("gateway_conn", gatewayClient)
-		logger.Info("got to 11")
 
 		// Setup a new controller to reconcile dotscience deployments
 		logger.Info("Setting up controller")
