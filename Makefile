@@ -14,8 +14,7 @@ install-release:
 	go install -ldflags="$(LDFLAGS)" github.com/dotmesh-io/ds-deployer/cmd/ds-deployer
 
 ubi-release:
-	@echo "Building dotscience-operator"
-	# build/operator-sdk build $(OPERATOR_IMAGE)
+	@echo "Building ds-deployer"
 	$(GO_ENV) $(GO_BUILD_CMD) \
 	  -ldflags="$(LDFLAGS)" \
 		-o ./build/_output/bin/ds-deployer \
