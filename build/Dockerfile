@@ -7,7 +7,7 @@ ENV GO111MODULE=off
 RUN apk update && apk upgrade && \
     apk add --no-cache bash git openssh curl make
 
-RUN make install-release
+RUN make ubi-release
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 
@@ -31,7 +31,7 @@ ENV OPERATOR=/usr/local/bin/ds-deployer \
 # get licenses
 COPY --from=build-env /usr/local/go/src/github.com/dotmesh-io/ds-deployer/licenses /licenses
 
-COPY --from=build-env /usr/local/go/bin/ds-deployer ${OPERATOR}
+COPY --from=build-env /usr/local/go/src/github.com/dotmesh-io/ds-deployer/build/_output/bin/ds-deployer ${OPERATOR}
 
 # Copy endtrypoint and user_setup
 COPY build/bin /usr/local/bin
