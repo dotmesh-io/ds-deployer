@@ -189,6 +189,19 @@ func updateIngress(existing *v1beta1.Ingress, md *deployer_v1.Deployment) *v1bet
 
 func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string) *v1beta1.Ingress {
 
+	annotations := map[string]string{
+		AnnControllerIdentifier: controllerIdentifier,
+		// based on model deployment name we will need this later
+		// to ensure we delete what's not needed anymore
+		"name":                           md.GetName(),
+		"deployment":                     md.GetId(),
+		kubernetesIngressClassAnnotation: md.Ingress.GetClass(),
+	}
+
+	if md.Ingress.GetClass() == "nginx" {
+		annotations["nginx.ingress.kubernetes.io/proxy-body-size"] = "100m"
+	}
+
 	ingress := &v1beta1.Ingress{
 		TypeMeta: metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{
@@ -197,14 +210,7 @@ func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string
 			Labels: map[string]string{
 				"owner": "ds-deployer",
 			},
-			Annotations: map[string]string{
-				AnnControllerIdentifier: controllerIdentifier,
-				// based on model deployment name we will need this later
-				// to ensure we delete what's not needed anymore
-				"name":                           md.GetName(),
-				"deployment":                     md.GetId(),
-				kubernetesIngressClassAnnotation: md.Ingress.GetClass(),
-			},
+			Annotations: annotations,
 		},
 		Spec: getIngressSpec(md),
 	}
