@@ -197,7 +197,7 @@ func getServiceType(md *deployer_v1.Deployment) corev1.ServiceType {
 	case "loadbalancer":
 		serviceType = corev1.ServiceTypeLoadBalancer
 	default:
-		serviceType = corev1.ServiceTypeNodePort
+		serviceType = corev1.ServiceTypeClusterIP
 	}
 	return serviceType
 }
