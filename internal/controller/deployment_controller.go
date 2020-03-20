@@ -12,6 +12,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	deployer_v1 "github.com/dotmesh-io/ds-deployer/apis/deployer/v1"
 )
@@ -134,11 +135,12 @@ const (
 )
 
 func getModelContainerName(d *deployer_v1.Deployment) string {
-	return modelContainerPrefix + d.GetName() + "-" + shortUUID(d.GetId())
+	// return modelContainerPrefix + d.GetName() + "-" + shortUUID(d.GetId())
+	return "model"
 }
 
 func getModelProxyContainerName(d *deployer_v1.Deployment) string {
-	return modelProxyContainerPrefix + d.GetName() + "-" + shortUUID(d.GetId())
+	return "proxy"
 }
 
 func shortUUID(u string) string {
@@ -156,6 +158,21 @@ func getModelClasses(val string) string {
 		return val
 	}
 	return string(decoded)
+}
+
+// Configures readiness probe to look at
+// https://github.com/dotmesh-io/model-proxy/blob/master/pkg/api/api.go#L89
+func getModelProxyReadinessProbe(modelDeployment *deployer_v1.Deployment) *corev1.Probe {
+	return &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/health",
+				Port: intstr.FromInt(int(ModelProxyAPIPort)),
+			},
+		},
+		InitialDelaySeconds: 30,
+		TimeoutSeconds:      10,
+	}
 }
 
 func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerIdentifier string) *appsv1.Deployment {
@@ -218,6 +235,7 @@ func toKubernetesDeployment(modelDeployment *deployer_v1.Deployment, controllerI
 					ContainerPort: ModelProxyAPIPort, // Proxy API
 				},
 			},
+			LivenessProbe: getModelProxyReadinessProbe(modelDeployment),
 		})
 
 		// add prometheus scraping configuration
@@ -313,6 +331,40 @@ func deploymentsEqual(desired, existing *appsv1.Deployment) bool {
 		if !envEqual(existingContainer.Env, container.Env) {
 			return false
 		}
+
+		if !livelinessProbeEqual(existingContainer.ReadinessProbe, container.ReadinessProbe) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func livelinessProbeEqual(l, r *corev1.Probe) bool {
+	if l == nil && r == nil {
+		return true
+	}
+	// if one is nil and another is not, need to recreate
+	if l == nil || r == nil {
+		return false
+	}
+
+	if l.Handler.HTTPGet != nil && r.Handler.HTTPGet != nil {
+		if l.Handler.HTTPGet.Path != r.Handler.HTTPGet.Path {
+			return false
+		}
+
+		if l.Handler.HTTPGet.Port != r.Handler.HTTPGet.Port {
+			return false
+		}
+
+		if l.InitialDelaySeconds != r.InitialDelaySeconds {
+			return false
+		}
+
+		if l.TimeoutSeconds != r.TimeoutSeconds {
+			return false
+		}
 	}
 
 	return true
@@ -369,10 +421,14 @@ func updateDeployment(existing *appsv1.Deployment, md *deployer_v1.Deployment) *
 
 	updated.Spec.Replicas = toInt32(int(md.Deployment.Replicas))
 	modelPodName := getModelContainerName(md)
+	proxyPodName := getModelProxyContainerName(md)
 	for idx, c := range updated.Spec.Template.Spec.Containers {
 		if c.Name == modelPodName {
 			updated.Spec.Template.Spec.Containers[idx].Image = md.Deployment.GetImage()
 			updated.Spec.Template.Spec.Containers[idx].Ports = cp
+		}
+		if c.Name == proxyPodName {
+			updated.Spec.Template.Spec.Containers[idx].ReadinessProbe = getModelProxyReadinessProbe(md)
 		}
 	}
 
