@@ -212,7 +212,10 @@ func getIngressAnnotations(md *deployer_v1.Deployment, controllerIdentifier stri
 	}
 
 	if md.Ingress.GetClass() == "nginx" {
-		annotations["nginx.ingress.kubernetes.io/proxy-body-size"] = "50m"
+		annotations["nginx.ingress.kubernetes.io/proxy-body-size"] = "0"
+		annotations["nginx.ingress.kubernetes.io/proxy-read-timeout"] = "600"
+		annotations["nginx.ingress.kubernetes.io/proxy-send-timeout"] = "600"
+
 		annotations["nginx.ingress.kubernetes.io/proxy-buffering"] = "off"
 		annotations["nginx.ingress.kubernetes.io/proxy-max-temp-file-size"] = "1024m"
 	}
