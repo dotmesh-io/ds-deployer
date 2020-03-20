@@ -86,7 +86,7 @@ func Test_toKubernetesDeployment(t *testing.T) {
 							},
 							Containers: []corev1.Container{
 								corev1.Container{
-									Name:  "ds-md-cats-1111",
+									Name:  "model",
 									Image: "quay.io/image:tag",
 									Ports: []corev1.ContainerPort{
 										{
