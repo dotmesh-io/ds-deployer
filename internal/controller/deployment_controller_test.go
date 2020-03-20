@@ -8,6 +8,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 func Test_toKubernetesDeployment(t *testing.T) {
@@ -85,7 +86,7 @@ func Test_toKubernetesDeployment(t *testing.T) {
 							},
 							Containers: []corev1.Container{
 								corev1.Container{
-									Name:  "ds-md-cats-1111",
+									Name:  "model",
 									Image: "quay.io/image:tag",
 									Ports: []corev1.ContainerPort{
 										{
@@ -104,6 +105,81 @@ func Test_toKubernetesDeployment(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := toKubernetesDeployment(tt.args.modelDeployment, tt.args.controllerIdentifier); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("toKubernetesDeployment() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_livelinessProbeEqual(t *testing.T) {
+	type args struct {
+		l *corev1.Probe
+		r *corev1.Probe
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "not init",
+			args: args{
+				l: nil,
+				r: &corev1.Probe{
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path: "/health",
+							Port: intstr.FromInt(9300),
+						},
+					},
+					InitialDelaySeconds: 30,
+					TimeoutSeconds:      10,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "not init deeper",
+			args: args{
+				l: nil,
+				r: &corev1.Probe{
+					Handler:             corev1.Handler{},
+					InitialDelaySeconds: 30,
+					TimeoutSeconds:      10,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "eq",
+			args: args{
+				l: &corev1.Probe{
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path: "/health",
+							Port: intstr.FromInt(9300),
+						},
+					},
+					InitialDelaySeconds: 30,
+					TimeoutSeconds:      10,
+				},
+				r: &corev1.Probe{
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path: "/health",
+							Port: intstr.FromInt(9300),
+						},
+					},
+					InitialDelaySeconds: 30,
+					TimeoutSeconds:      10,
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := livelinessProbeEqual(tt.args.l, tt.args.r); got != tt.want {
+				t.Errorf("livelinessProbeEqual() = %v, want %v", got, tt.want)
 			}
 		})
 	}

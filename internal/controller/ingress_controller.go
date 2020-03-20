@@ -50,7 +50,7 @@ func (c *Controller) synchronizeIngresses() error {
 				c.statusCache.Set(modelDeployment.Id, status.ModuleIngress, status.StatusConfiguring)
 			}
 
-			updatedIngress := updateIngress(existing, modelDeployment)
+			updatedIngress := updateIngress(existing, modelDeployment, c.controllerIdentifier)
 
 			wg.Add(1)
 			go func(updatedIngress *v1beta1.Ingress) {
@@ -155,6 +155,18 @@ func ingressesEqual(desired, existing *v1beta1.Ingress) bool {
 		return false
 	}
 
+	// checking whether we have desired annotations,
+	// if current has more than what we want then it's still fine
+	for k, v := range desired.GetAnnotations() {
+		ek, ok := existing.Annotations[k]
+		if !ok {
+			return false
+		}
+		if ek != v {
+			return false
+		}
+	}
+
 	for i := range desired.Spec.Rules {
 		if desired.Spec.Rules[i].Host != existing.Spec.Rules[i].Host {
 			return false
@@ -179,16 +191,17 @@ func ingressesEqual(desired, existing *v1beta1.Ingress) bool {
 	return true
 }
 
-func updateIngress(existing *v1beta1.Ingress, md *deployer_v1.Deployment) *v1beta1.Ingress {
+func updateIngress(existing *v1beta1.Ingress, md *deployer_v1.Deployment, controllerIdentifier string) *v1beta1.Ingress {
 	updated := existing.DeepCopy()
-	updated.Annotations[kubernetesIngressClassAnnotation] = md.Ingress.GetClass()
+
+	updated.Annotations = getIngressAnnotations(md, controllerIdentifier)
+	// updated.Annotations[kubernetesIngressClassAnnotation] = md.Ingress.GetClass()
 	updated.Spec = getIngressSpec(md)
 
 	return updated
 }
 
-func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string) *v1beta1.Ingress {
-
+func getIngressAnnotations(md *deployer_v1.Deployment, controllerIdentifier string) map[string]string {
 	annotations := map[string]string{
 		AnnControllerIdentifier: controllerIdentifier,
 		// based on model deployment name we will need this later
@@ -199,8 +212,20 @@ func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string
 	}
 
 	if md.Ingress.GetClass() == "nginx" {
-		annotations["nginx.ingress.kubernetes.io/proxy-body-size"] = "100m"
+		annotations["nginx.ingress.kubernetes.io/proxy-body-size"] = "0"
+		annotations["nginx.ingress.kubernetes.io/proxy-read-timeout"] = "600"
+		annotations["nginx.ingress.kubernetes.io/proxy-send-timeout"] = "600"
+
+		annotations["nginx.ingress.kubernetes.io/proxy-buffering"] = "off"
+		annotations["nginx.ingress.kubernetes.io/proxy-max-temp-file-size"] = "1024m"
 	}
+
+	return annotations
+}
+
+func toKubernetesIngress(md *deployer_v1.Deployment, controllerIdentifier string) *v1beta1.Ingress {
+
+	annotations := getIngressAnnotations(md, controllerIdentifier)
 
 	ingress := &v1beta1.Ingress{
 		TypeMeta: metav1.TypeMeta{},
